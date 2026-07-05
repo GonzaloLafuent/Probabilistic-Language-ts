@@ -1,0 +1,19 @@
+{
+  "name": "probabilistic-language-ts",
+  "version": "1.0.0",
+  "description": "A probabilistic programming language in TypeScript",
+  "type": "module",
+  "main": "main.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --loader ts-node/esm main.ts",
+    "start": "node main.js"
+  },
+  "keywords": ["probabilistic", "programming"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
+  }
+}
