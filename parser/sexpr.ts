@@ -1,4 +1,5 @@
 export type SymbolToken = { kind: "Symbol"; name: string };
+
 export type SExpr = SymbolToken | number | boolean | string | SExpr[] | null;
 
 function makeSymbol(name: string): SymbolToken {
@@ -11,6 +12,10 @@ function isSymbol(value: unknown): value is SymbolToken {
 
 function quoteString(value: string): string {
   return '"' + value.replace(/"/g, '\\"') + '"';
+}
+
+function isSExprArray(expr: SExpr): expr is SExpr[] {
+  return Array.isArray(expr);
 }
 
 function tokenize(text: string) : Array<string | SymbolToken> {
@@ -128,16 +133,6 @@ function parseOne(text: string): SExpr {
   return forms[0];
 }
 
-function walk(expr: SExpr, visit: (node: SExpr) => void): void {
-  visit(expr);
-
-  if (Array.isArray(expr)) {
-    for (const child of expr) {
-      walk(child, visit);
-    }
-  }
-}
-
 function toStringExpr(form: SExpr): string {
   if (isSymbol(form)) {
     return form.name;
@@ -157,4 +152,4 @@ function toStringExpr(form: SExpr): string {
   return String(form);
 }
 
-export {toStringExpr, parseOne, parse, tokenize, isSymbol, makeSymbol, walk}
+export {toStringExpr, parseOne, parse, tokenize, isSymbol, makeSymbol, isSExprArray}
