@@ -1,5 +1,5 @@
-import { parse, SExpr } from "../parser/sexpr";
-import { Instruction } from "./Intructions";
+import { isSExprArray, parse, SExpr, SymbolToken } from "../parser/sexpr";
+import { Discard, Evaluate, Instruction } from "./Intructions";
 import { PrimitiveValue } from "../language/primitives";
 import { DoneMessage, Message } from "./Messages";
 
@@ -20,11 +20,11 @@ class Closure {
 }
 
 class Machine {
-    C: Instruction[];
-    V: PrimitiveValue[];
-    env: Environment;
-    rng: () => number;
-    logW: number;
+    ControlStack: Instruction[];
+    ValueStack: PrimitiveValue[];
+    Environment: Environment;
+    RNG: () => number;
+    LogW: number;
 
     constructor(
         C: Instruction[],
@@ -33,63 +33,65 @@ class Machine {
         rng = Math.random,
         logW = 0
     ) {
-        this.C = C;
-        this.V = V;
-        this.env = env;
-        this.rng = rng;
-        this.logW = logW;
+        this.ControlStack = C;
+        this.ValueStack = V;
+        this.Environment = env;
+        this.RNG = rng;
+        this.LogW = logW;
     }
 
     fork(rng = Math.random): Machine {
-        return new Machine(this.C, this.V, this.env, rng, this.logW);
+        return new Machine(this.ControlStack, this.ValueStack, this.Environment, rng, this.LogW);
     }
-}
 
-function initialMachine(program: string, rng = Math.random): Machine {
-    const generatedEnvironment: Environment = {};
-    const parsedProgram = parse(program);
-    let main = null
+    initialMachine(program: string, rng = Math.random): Machine {
+        const generatedEnvironment: Environment = {};
+        const parsedProgram = parse(program);
+        let main = null as SExpr
 
-    for (const form of parsedProgram) {
-        if (Array.isArray(form) && form[0] === "defn") {
-            
-        } else {
-            main = form;
+        for (const form of parsedProgram) {
+            if (isSExprArray(form) && ((form as Array<SExpr>)[0] as SymbolToken).name == 'defn') {
+                //To do for defn
+            } else {
+                main = form;
+            }
+        }
+        
+        this.Environment = generatedEnvironment
+        this.RNG = rng
+        this.ControlStack.push(new Evaluate(main, generatedEnvironment, []))
+
+        return this
+    }
+
+    resume() : Message {
+        while(this.ControlStack.length != 0 ){
+            const instruction = this.ControlStack.pop();
+            const message = instruction?.Execute(this)
+
+            if(message) return message
+        }
+
+        return new DoneMessage(this.ValueStack.slice(-1)[0], this) 
+    }
+
+    pushBody(body: SExpr[], environment: Environment, address: string[]) 
+    {   
+        const sequence = new Array<Instruction>
+        body.slice(0, -1).forEach((b, n) => {
+            sequence.push(new Evaluate(b,environment,address))
+            sequence.push(new Discard())
+        });
+        sequence.push(new Evaluate(body[body.length - 1],environment,address))
+        
+        for(const instruction of sequence.reverse()) {
+            this.ControlStack.push(instruction)
         }
     }
 
-    return initialMachine
-}
-
-/**  
-Dentro del stack tengo lo siguiente
-("ev", expr, env, addr)
-("letk", binds, i, body, env, addr)
-("ifk", then, else, env, addr)
-("callk", argc, addr)
-("samplek", addr)
-("observek", addr)
-("discard")
-**/
-
-function resume(machine: Machine) : Message {
-    while(machine.C.length != 0 ){
-        const instruction = machine.C.pop();
-        const message = instruction?.Execute(machine)
-
-        if(message) return message
+    send(value:PrimitiveValue) {
+        this.ValueStack.push(value);
     }
-
-    return new DoneMessage(machine.V.slice(-1)[0], machine)
-}
-
-function pushBody(C: Instruction[], body: SExpr[], env: Environment, addr: any[]) 
-{
-
-}
-
-function send(Machine: Machine, value:any) {
-    Machine.V.push(value);
 }
 
 export {Machine, Environment, Closure, Address}
