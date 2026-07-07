@@ -1,9 +1,12 @@
+import { Controller } from "../controllers/Controller"
 import { Distribution } from "../language/distributions"
 import { PrimitiveValue } from "../language/primitives"
 import { Address, Machine } from "./machine"
 
 abstract class Message {
    abstract messageName: string 
+
+   abstract execute(controller:Controller): void | Array<PrimitiveValue>
 }
 
 class SampleMessage extends Message {
@@ -17,6 +20,10 @@ class SampleMessage extends Message {
         this.Address = address
         this.Distribution = distribution
         this.Machine = machine
+    }
+
+    execute(controller: Controller): void | Array<PrimitiveValue> {
+        return controller.sample(this)
     }
 }
 
@@ -35,6 +42,9 @@ class ObserveMessage extends Message {
         this.Machine = machine
     }
 
+    execute(controller: Controller): void | Array<PrimitiveValue> {
+        controller.observe(this)
+    }
 }
 
 class DoneMessage extends Message {
@@ -46,6 +56,10 @@ class DoneMessage extends Message {
         super()
         this.Machine = machine
         this.ReturnValue = returnValue
+    }
+
+    execute(controller: Controller): void | Array<PrimitiveValue> {
+        controller.done(this)
     }
 }
 
