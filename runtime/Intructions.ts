@@ -27,39 +27,39 @@ class Evaluate extends Instruction {
     Execute(machine: Machine): void {
         if(isSymbol(this.Expression)) {
             if (this.Expression.name in this.Environment) {
-                machine.V.push(this.Environment[this.Expression.name])
+                machine.ValueStack.push(this.Environment[this.Expression.name])
             } else if (isPrimitive(this.Expression.name)){
-                machine.V.push(PRIMITIVES[this.Expression.name]())
+                machine.ValueStack.push(PRIMITIVES[this.Expression.name]())
             }else{
                 throw Error("Incorrect Name")
             }
         } else if (!isSExprArray(this.Expression) ) {
-            machine.V.push(this.Expression)
+            machine.ValueStack.push(this.Expression)
         } else {
             const head = this.Expression[0] as SymbolToken
             const name = head.name
             if (name === 'let') {
                 const [, binds, ...body] = this.Expression;
                 if (binds){
-                    machine.C.push(new LetContinuation(binds, 0, body, this.Environment, []))  
-                    machine.C.push(new Evaluate((binds as Array<SExpr>)[1], this.Environment, []))                                      
+                    machine.ControlStack.push(new LetContinuation(binds, 0, body, this.Environment, []))  
+                    machine.ControlStack.push(new Evaluate((binds as Array<SExpr>)[1], this.Environment, []))                                      
                 } else 
                 {
-                    //Push Body
+                    machine.pushBody(body,this.Environment,[])
                 }
             } else if (name === 'if'){
                 const [, test, then, els] = this.Expression
-                machine.C.push(new IfContinuation(then,els, this.Environment, []))
-                machine.C.push(new Evaluate(test, this.Environment, []))
+                machine.ControlStack.push(new IfContinuation(then,els, this.Environment, []))
+                machine.ControlStack.push(new Evaluate(test, this.Environment, []))
             } else if (name === 'fn'){
                 //To Do
             } else if (name === 'sample'){
-                machine.C.push(new SampleContinuation(this.Address));
-                machine.C.push(new Evaluate(this.Expression[1], this.Environment, []))
+                machine.ControlStack.push(new SampleContinuation(this.Address));
+                machine.ControlStack.push(new Evaluate(this.Expression[1], this.Environment, []))
             } else if (name === 'observe') {
-                machine.C.push(new ObserveContinuation(this.Address))
-                machine.C.push(new Evaluate(this.Expression[2], this.Environment, []))
-                machine.C.push(new Evaluate(this.Expression[1], this.Environment, []))
+                machine.ControlStack.push(new ObserveContinuation(this.Address))
+                machine.ControlStack.push(new Evaluate(this.Expression[2], this.Environment, []))
+                machine.ControlStack.push(new Evaluate(this.Expression[1], this.Environment, []))
             } else {
                 // To Do
             }
@@ -71,7 +71,7 @@ class Discard extends Instruction {
     instructionName = 'Discard'
 
     Execute(machine: Machine): void {
-        machine.C.pop()
+        machine.ControlStack.pop()
     }
 }
 
@@ -93,10 +93,12 @@ class LetContinuation extends Instruction {
     }
 
     Execute(machine: Machine): void {
-        if (2*(this.IndexBind +1) < this.Binds.length) {
-            machine.C.push(new LetContinuation(this.Binds, this.IndexBind + 1, this.Body, this.Environment, []))
+        let env = { ...this.Environment };
+        env[(this.Binds as SymbolToken[])[2 * this.IndexBind].name] = machine.ValueStack.pop();
+        if (2*(this.IndexBind +1) < (this.Binds as Array<SExpr>).length) {
+            machine.ControlStack.push(new LetContinuation(this.Binds, this.IndexBind + 1, this.Body, this.Environment, []))
         } else {
-            //To Do
+            machine.pushBody(this.Body as Array<SExpr>, this.Environment, [])
         }
     }
 }
@@ -117,8 +119,8 @@ class IfContinuation extends Instruction {
     }
 
     Execute(machine: Machine): void {
-        const [branch, tag ] =  machine.V.pop() ? [this.Then, 'then']: [this.Els, 'else']
-        machine.C.push(new Evaluate(branch, this.Environment, []))
+        const [branch, tag ] =  machine.ValueStack.pop() ? [this.Then, 'then']: [this.Els, 'else']
+        machine.ControlStack.push(new Evaluate(branch, this.Environment, []))
     }
 }
 
@@ -132,7 +134,7 @@ class SampleContinuation extends Instruction {
     }
 
     Execute(machine: Machine): Message {
-        const distribution = machine.V.pop()
+        const distribution = machine.ValueStack.pop()
         return new SampleMessage(this.Address, distribution as Distribution, machine)
     }
 }
@@ -147,8 +149,8 @@ class ObserveContinuation extends Instruction {
     }
 
     Execute(machine: Machine): Message {
-        const observed = machine.V.pop()
-        const distribution = machine.V.pop()
+        const observed = machine.ValueStack.pop()
+        const distribution = machine.ValueStack.pop()
         return new ObserveMessage(this.Address, distribution as Distribution, observed as PrimitiveValue, machine)
     }
 }
@@ -157,9 +159,9 @@ class CallContinuation extends Instruction {
     instructionName = 'Callk'
 
     Execute(machine: Machine): void {
-        
+        //To Do
     }
 }
 
 
-export { Instruction }
+export { Instruction, Evaluate, Discard}
