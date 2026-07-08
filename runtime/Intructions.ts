@@ -25,12 +25,12 @@ class Evaluate extends Instruction {
         this.Address = address
     }
     
-    Execute(machine: Machine): Message {
+    Execute(machine: Machine): void  {
         if(isSymbol(this.Expression)) {
             if (this.Expression.name in this.Environment) {
                 machine.ValueStack.push(this.Environment[this.Expression.name])
             } else if (isPrimitive(this.Expression.name)){
-                machine.ValueStack.push(PRIMITIVES[this.Expression.name]())
+                machine.ValueStack.push(PRIMITIVES[this.Expression.name])
             }else{
                 throw Error("Incorrect Name")
             }
@@ -62,11 +62,16 @@ class Evaluate extends Instruction {
                 machine.ControlStack.push(new Evaluate(this.Expression[2], this.Environment, []))
                 machine.ControlStack.push(new Evaluate(this.Expression[1], this.Environment, []))
             } else {
-                // To Do
+                machine.ControlStack.push(new CallContinuation(this.Expression.length - 1, []))
+
+                for (let i = this.Expression.length - 1; i > 0; i--) {
+                    machine.ControlStack.push(new Evaluate(this.Expression[i], this.Environment, []))
+                }
+                machine.ControlStack.push(new Evaluate(this.Expression[0], this.Environment, []))
             }
         }
 
-        return new DoneMessage(machine.ValueStack.slice(-1)[0], machine) 
+        return 
     }
 }
 
@@ -160,9 +165,24 @@ class ObserveContinuation extends Instruction {
 
 class CallContinuation extends Instruction {
     instructionName = 'Callk'
+    NumberOfParameters:Number
+    Address:Address
+
+    constructor(numberOfParameters:number, addres:Address){
+        super()
+        this.NumberOfParameters = numberOfParameters
+        this.Address = addres
+    }
 
     Execute(machine: Machine): void {
-        //To Do
+        const args = machine.ValueStack.splice(-this.NumberOfParameters).reverse()
+        const func = machine.ValueStack.pop() as ((...args: PrimitiveValue[]) => PrimitiveValue)
+        if (false) {
+            //Implement logic for closure
+        } else {
+            const value = func(...args) as PrimitiveValue
+            machine.ValueStack.push(value)
+        }
     }
 }
 
