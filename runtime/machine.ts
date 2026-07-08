@@ -67,14 +67,10 @@ class Machine {
     resume() : Message {
         while(this.ControlStack.length != 0 ){
             const instruction = this.ControlStack.pop();
-            
-            const message = instruction?.Execute(this)
-
-
-            if(message) return message
+            instruction?.Execute(this)
         }
 
-        return new DoneMessage(-1, this) 
+        return new DoneMessage(this.ValueStack.slice(-1)[0], this) 
     }
 
     pushBody(body: SExpr[], environment: Environment, address: string[]) 
