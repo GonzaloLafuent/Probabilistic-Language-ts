@@ -13,7 +13,9 @@ export type PrimitiveValue =
   | null
   | PrimitiveArray
   | PrimitiveMap
-  | Distribution;
+  | Distribution
+  | ((...args: PrimitiveValue[]) => Number)
+  | ((...args: PrimitiveValue[]) => PrimitiveValue);
 
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && !Number.isNaN(value);
