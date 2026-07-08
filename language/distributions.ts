@@ -1,3 +1,4 @@
+/*
 interface RNG {
   random(): number;
 }
@@ -6,7 +7,7 @@ class DefaultRNG implements RNG {
   random(): number {
     return Math.random();
   }
-}
+}*/
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -15,7 +16,7 @@ function clamp(value: number, min: number, max: number): number {
 abstract class Distribution {
   abstract name: string;
 
-  abstract sample(rng?: RNG): unknown;
+  abstract sample(rng?: () => number): unknown;
 
   abstract logProb(x: unknown): number;
 
@@ -40,24 +41,24 @@ abstract class Distribution {
   }
 }
 
-function normalSample(rng: RNG): number {
+function normalSample(rng: () => number): number {
   let u = 0;
   let v = 0;
   while (u === 0) {
-    u = rng.random();
+    u = rng();
   }
   while (v === 0) {
-    v = rng.random();
+    v = rng();
   }
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-function gammaSample(alpha: number, beta: number, rng: RNG): number {
+function gammaSample(alpha: number, beta: number, rng: () => number): number {
   if (alpha < 1.0) {
     const d = alpha + (2.718281828459045 - 1.0) / alpha;
     while (true) {
-      const u = rng.random();
-      const v = rng.random();
+      const u = rng();
+      const v = rng();
       const x = Math.pow(u, 1.0 / alpha);
       if (v <= Math.exp(-x)) {
         return x / beta;
@@ -73,14 +74,14 @@ function gammaSample(alpha: number, beta: number, rng: RNG): number {
       continue;
     }
     v = v * v * v;
-    const u = rng.random();
+    const u = rng();
     if (u < 1 - 0.0331 * x * x * x * x || Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) {
       return d * v / beta;
     }
   }
 }
 
-function betaSample(alpha: number, beta: number, rng: RNG): number {
+function betaSample(alpha: number, beta: number, rng: () => number): number {
   const x = gammaSample(alpha, 1.0, rng);
   const y = gammaSample(beta, 1.0, rng);
   return x / (x + y);
@@ -102,7 +103,7 @@ class Normal extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): number {
+  sample(rng: () => number = Math.random): number {
     return this.mu + this.sigma * normalSample(rng);
   }
 
@@ -140,7 +141,7 @@ class LogNormal extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): number {
+  sample(rng: () => number =  Math.random): number {
     return Math.exp(this.mu + this.sigma * normalSample(rng));
   }
 
@@ -181,8 +182,8 @@ class Uniform extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): number {
-    return this.a + rng.random() * (this.b - this.a);
+  sample(rng: () => number = Math.random): number {
+    return this.a + rng() * (this.b - this.a);
   }
 
   logProb(x: unknown): number {
@@ -204,8 +205,8 @@ class Exponential extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): number {
-    return -Math.log(1 - rng.random()) / this.rate;
+  sample(rng: () => number = Math.random): number {
+    return -Math.log(1 - rng()) / this.rate;
   }
 
   logProb(x: unknown): number {
@@ -227,7 +228,7 @@ class Beta extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): number {
+  sample(rng: () => number = Math.random): number {
     return betaSample(this.alpha, this.beta, rng);
   }
 
@@ -256,7 +257,7 @@ class Gamma extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): number {
+  sample(rng: () => number = Math.random): number {
     return gammaSample(this.shape, this.rate, rng);
   }
 
@@ -287,13 +288,13 @@ class Poisson extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): number {
+  sample(rng: () => number = Math.random): number {
     const L = Math.exp(-this.lambda);
     let k = 0;
     let p = 1;
     while (p > L) {
       k += 1;
-      p *= rng.random();
+      p *= rng();
     }
     return k - 1;
   }
@@ -320,8 +321,8 @@ class Bernoulli extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): boolean {
-    return rng.random() < this.p;
+  sample(rng: () => number = Math.random): boolean {
+    return rng() < this.p;
   }
 
   logProb(x: unknown): number {
@@ -361,8 +362,8 @@ class Discrete extends Distribution {
     this.probs = probs.map((p) => p / sum);
   }
 
-  sample(rng: RNG = new DefaultRNG()): number {
-    const r = rng.random();
+  sample(rng: () => number = Math.random): number {
+    const r = rng();
     let cumulative = 0;
     for (let i = 0; i < this.probs.length; i += 1) {
       cumulative += this.probs[i];
@@ -409,8 +410,8 @@ class UniformDiscrete extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): number {
-    return Math.floor(rng.random() * (this.hi - this.lo)) + this.lo;
+  sample(rng: () => number = Math.random): number {
+    return Math.floor(rng() * (this.hi - this.lo)) + this.lo;
   }
 
   logProb(x: unknown): number {
@@ -432,7 +433,7 @@ class Dirichlet extends Distribution {
     }
   }
 
-  sample(rng: RNG = new DefaultRNG()): number[] {
+  sample(rng: () => number = Math.random): number[] {
     const draws = this.alphas.map((alpha) => gammaSample(alpha, 1.0, rng));
     const total = draws.reduce((a, b) => a + b, 0);
     return draws.map((value) => value / total);
@@ -527,4 +528,4 @@ function makeGuide(d: Distribution): Distribution {
   throw new Error(`no optimizable guide family for distribution ${d.name}`);
 }
 
-export {RNG, DefaultRNG, Distribution, Normal, LogNormal, Beta, Gamma, Exponential, Uniform, Poisson, Bernoulli, Discrete, UniformDiscrete, Dirichlet, DISTRIBUTIONS, makeGuide};
+export {Distribution, Normal, LogNormal, Beta, Gamma, Exponential, Uniform, Poisson, Bernoulli, Discrete, UniformDiscrete, Dirichlet, DISTRIBUTIONS, makeGuide};
