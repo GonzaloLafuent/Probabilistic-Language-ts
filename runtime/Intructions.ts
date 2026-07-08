@@ -1,9 +1,9 @@
-import { Address, Machine } from "./machine"
-import { Environment } from "./machine"
-import { isSymbol, SExpr, isSExprArray, SymbolToken } from "../parser/sexpr"
-import { isPrimitive, PRIMITIVES, PrimitiveValue } from "../language/primitives"
-import { Message, ObserveMessage, SampleMessage } from "./Messages"
-import { Distribution } from "../language/distributions"
+import type { Address, Machine } from "./machine.js"
+import type { Environment } from "./machine.js"
+import { isSymbol, SExpr, isSExprArray, SymbolToken } from "../parser/sexpr.js"
+import { isPrimitive, PRIMITIVES, PrimitiveValue } from "../language/primitives.js"
+import { Message, ObserveMessage, SampleMessage } from "./Messages.js"
+import { Distribution } from "../language/distributions.js"
 
 abstract class Instruction {
     abstract instructionName: string

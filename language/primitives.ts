@@ -1,4 +1,4 @@
-import { DISTRIBUTIONS, Distribution } from "./distributions";
+import { DISTRIBUTIONS, Distribution } from "./distributions.js";
 
 export interface PrimitiveArray extends Array<PrimitiveValue> {}
 

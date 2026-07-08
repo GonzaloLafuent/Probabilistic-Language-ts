@@ -1,5 +1,5 @@
-import { PrimitiveValue } from "../language/primitives";
-import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/Messages";
+import type { PrimitiveValue } from "../language/primitives.js";
+import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/Messages.js";
 
 abstract class Controller {
     abstract ControllerName:string

@@ -1,7 +1,7 @@
-import { PrimitiveValue } from "../language/primitives";
-import { Machine } from "../runtime/machine";
-import { Controller } from "./Controller";
-import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/Messages";
+import type { PrimitiveValue } from "../language/primitives.js";
+import { Machine } from "../runtime/machine.js";
+import { Controller } from "./Controller.js";
+import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/Messages.js";
 
 class LikehoodWeighting extends Controller {
     ControllerName = 'LikehoodWeighting'
@@ -44,3 +44,5 @@ class LikehoodWeighting extends Controller {
         return [returnValue, logW]
     }
 }
+
+export {LikehoodWeighting}

@@ -1,7 +1,7 @@
-import { isSExprArray, parse, SExpr, SymbolToken } from "../parser/sexpr";
-import { Discard, Evaluate, Instruction } from "./Intructions";
-import { PrimitiveValue } from "../language/primitives";
-import { DoneMessage, Message } from "./Messages";
+import { isSExprArray, parse, SExpr, SymbolToken } from "../parser/sexpr.js";
+import { Discard, Evaluate, Instruction } from "./Intructions.js";
+import type { PrimitiveValue } from "../language/primitives.js";
+import { DoneMessage, Message } from "./Messages.js";
 
 type Environment = Record<string, any>;
 
@@ -91,6 +91,10 @@ class Machine {
 
     send(value:PrimitiveValue) {
         this.ValueStack.push(value);
+    }
+
+    setLogW(newLogW:number){
+        this.LogW = newLogW
     }
 }
 

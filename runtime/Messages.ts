@@ -1,7 +1,7 @@
-import { Controller } from "../controllers/Controller"
-import { Distribution } from "../language/distributions"
-import { PrimitiveValue } from "../language/primitives"
-import { Address, Machine } from "./machine"
+import { Controller } from "../controllers/Controller.js"
+import { Distribution } from "../language/distributions.js"
+import type { PrimitiveValue } from "../language/primitives.js"
+import type { Address, Machine } from "./machine.js"
 
 abstract class Message {
    abstract messageName: string 

@@ -1,9 +1,16 @@
-import { parseOne, walk } from "./parser/sexpr.js";
+import { LikehoodWeighting } from "./controllers/LikehoodWeighting.js";
+import { parseOne } from "./parser/sexpr.js";
 
-let program = "(let [m (sample (normal 0 1))] (observe (normal m 1) 2.0) m)"
+let program = '42'
 
-console.log("pograma: ",program)
+console.log("Program: ",program)
 
 const ast = parseOne(program);
-console.log("Programa parseado: ", ast)
+console.log("Parsed program: ", ast)
+
+const controller = new LikehoodWeighting()
+
+const message = controller.run(program, Math.random)
+
+console.log("Message:", message)
 
