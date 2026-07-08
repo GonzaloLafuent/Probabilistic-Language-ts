@@ -12,7 +12,10 @@ class LikehoodWeighting extends Controller {
 
         while(true){
             const message = machine.resume()
+
             const value = message.execute(this)
+
+            console.log("Value", value)
 
             if(value)
                 return value

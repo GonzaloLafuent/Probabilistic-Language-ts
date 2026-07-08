@@ -23,7 +23,7 @@ class SampleMessage extends Message {
     }
 
     execute(controller: Controller): void | Array<PrimitiveValue> {
-        return controller.sample(this)
+        controller.sample(this)
     }
 }
 
@@ -59,7 +59,7 @@ class DoneMessage extends Message {
     }
 
     execute(controller: Controller): void | Array<PrimitiveValue> {
-        controller.done(this)
+        return controller.done(this)
     }
 }
 

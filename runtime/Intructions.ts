@@ -4,6 +4,7 @@ import { isSymbol, SExpr, isSExprArray, SymbolToken } from "../parser/sexpr.js"
 import { isPrimitive, PRIMITIVES, PrimitiveValue } from "../language/primitives.js"
 import { Message, ObserveMessage, SampleMessage } from "./Messages.js"
 import { Distribution } from "../language/distributions.js"
+import { DoneMessage } from "./Messages.js"
 
 abstract class Instruction {
     abstract instructionName: string
@@ -24,7 +25,7 @@ class Evaluate extends Instruction {
         this.Address = address
     }
     
-    Execute(machine: Machine): void {
+    Execute(machine: Machine): Message {
         if(isSymbol(this.Expression)) {
             if (this.Expression.name in this.Environment) {
                 machine.ValueStack.push(this.Environment[this.Expression.name])
@@ -64,6 +65,8 @@ class Evaluate extends Instruction {
                 // To Do
             }
         }
+
+        return new DoneMessage(machine.ValueStack.slice(-1)[0], machine) 
     }
 }
 
