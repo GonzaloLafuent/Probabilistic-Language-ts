@@ -41,7 +41,7 @@ class Machine {
     }
 
     fork(rng = Math.random): Machine {
-        return new Machine(this.ControlStack, this.ValueStack, this.Environment, rng, this.LogW);
+        return  new Machine([...this.ControlStack],[...this.ValueStack],{ ...this.Environment },rng,this.LogW)
     }
 
     initialMachine(program: string, rng = Math.random): Machine {
