@@ -50,7 +50,10 @@ function sub(...args: PrimitiveValue[]): PrimitiveValue {
 }
 
 function mul(...args: PrimitiveValue[]): PrimitiveValue {
-  return args.reduce((acc, x) => numValue(acc) * numValue(x), numValue(args[0]));
+  if (args.length === 0) {
+    throw new Error("mul expects at least one argument");
+  }
+  return args.slice(1).reduce((acc, x) => numValue(acc) * numValue(x), numValue(args[0]));
 }
 
 function div(...args: PrimitiveValue[]): PrimitiveValue {
