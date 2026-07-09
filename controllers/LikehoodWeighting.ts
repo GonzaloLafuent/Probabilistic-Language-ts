@@ -2,21 +2,22 @@ import type { PrimitiveValue } from "../language/primitives.js";
 import { Machine } from "../runtime/machine.js";
 import { Controller } from "./Controller.js";
 import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/Messages.js";
+import { softmax } from "../language/distributions.js";
 
 class LikehoodWeighting extends Controller {
     ControllerName = 'LikehoodWeighting'
 
     public run(program: string, rng: () => number, rngs: Array<() => number>, steps: number): Array<PrimitiveValue> {
         const values = [] as Array<PrimitiveValue>
-        const log_Ws = [] as Array<PrimitiveValue>
+        const log_Ws = [] as Array<number>
         
         for (let i = 0; i<steps; i++ ){
             const message = this.singleRun(program, rng)
             values.push(message[0])
-            log_Ws.push(message[1])
+            log_Ws.push(message[1] as number)
         }
 
-        return [values, log_Ws]
+        return [values, softmax(log_Ws)]
     }
 
     private singleRun(program:string, rng: () => number){
