@@ -79,7 +79,7 @@ class Discard extends Instruction {
     instructionName = 'Discard'
 
     Execute(machine: Machine): void {
-        machine.ControlStack.pop()
+        machine.ValueStack.pop()
     }
 }
 
@@ -175,7 +175,7 @@ class CallContinuation extends Instruction {
     }
 
     Execute(machine: Machine): void {
-        const args = machine.ValueStack.splice(-this.NumberOfParameters).reverse()
+        const args = machine.ValueStack.splice(-this.NumberOfParameters);
         const func = machine.ValueStack.pop() as ((...args: PrimitiveValue[]) => PrimitiveValue)
         if (false) {
             //Implement logic for closure
