@@ -1,10 +1,9 @@
-import type { Address, Machine } from "./machine.js"
+import { Address, Machine } from "./machine.js"
 import type { Environment } from "./machine.js"
 import { isSymbol, SExpr, isSExprArray, SymbolToken } from "../parser/sexpr.js"
 import { isPrimitive, PRIMITIVES, PrimitiveValue } from "../language/primitives.js"
 import { Message, ObserveMessage, SampleMessage } from "./Messages.js"
 import { Distribution } from "../language/distributions.js"
-import { DoneMessage } from "./Messages.js"
 
 abstract class Instruction {
     abstract instructionName: string
@@ -42,32 +41,32 @@ class Evaluate extends Instruction {
             if (name === 'let') {
                 const [, binds, ...body] = this.Expression;
                 if (binds){
-                    machine.ControlStack.push(new LetContinuation(binds, 0, body, this.Environment, []))  
-                    machine.ControlStack.push(new Evaluate((binds as Array<SExpr>)[1], this.Environment, []))                                      
+                    machine.ControlStack.push(new LetContinuation(binds, 0, body, this.Environment, this.Address))  
+                    machine.ControlStack.push(new Evaluate((binds as Array<SExpr>)[1], this.Environment, this.Address.append('let',0)))                                      
                 } else 
                 {
-                    machine.pushBody(body,this.Environment,[])
+                    machine.pushBody(body,this.Environment,this.Address)
                 }
             } else if (name === 'if'){
                 const [, test, then, els] = this.Expression
-                machine.ControlStack.push(new IfContinuation(then,els, this.Environment, []))
-                machine.ControlStack.push(new Evaluate(test, this.Environment, []))
+                machine.ControlStack.push(new IfContinuation(then,els, this.Environment, this.Address))
+                machine.ControlStack.push(new Evaluate(test, this.Environment, this.Address.append('test')))
             } else if (name === 'fn'){
                 //To Do
             } else if (name === 'sample'){
                 machine.ControlStack.push(new SampleContinuation(this.Address));
-                machine.ControlStack.push(new Evaluate(this.Expression[1], this.Environment, []))
+                machine.ControlStack.push(new Evaluate(this.Expression[1], this.Environment, this.Address.append('d')))
             } else if (name === 'observe') {
                 machine.ControlStack.push(new ObserveContinuation(this.Address))
-                machine.ControlStack.push(new Evaluate(this.Expression[2], this.Environment, []))
-                machine.ControlStack.push(new Evaluate(this.Expression[1], this.Environment, []))
+                machine.ControlStack.push(new Evaluate(this.Expression[2], this.Environment, this.Address.append('v')))
+                machine.ControlStack.push(new Evaluate(this.Expression[1], this.Environment, this.Address.append('d')))
             } else {
-                machine.ControlStack.push(new CallContinuation(this.Expression.length - 1, []))
+                machine.ControlStack.push(new CallContinuation(this.Expression.length - 1, this.Address))
 
                 for (let i = this.Expression.length - 1; i > 0; i--) {
-                    machine.ControlStack.push(new Evaluate(this.Expression[i], this.Environment, []))
+                    machine.ControlStack.push(new Evaluate(this.Expression[i], this.Environment, this.Address.append(i-1)))
                 }
-                machine.ControlStack.push(new Evaluate(this.Expression[0], this.Environment, []))
+                machine.ControlStack.push(new Evaluate(this.Expression[0], this.Environment, this.Address.append('fn')))
             }
         }
 
@@ -89,9 +88,9 @@ class LetContinuation extends Instruction {
     IndexBind: number
     Body: SExpr
     Environment:Environment
-    Address: Array<String>
+    Address: Address
 
-    constructor(binds: SExpr, indexBind: number, body: SExpr, environment: Environment, address:Array<String>){
+    constructor(binds: SExpr, indexBind: number, body: SExpr, environment: Environment, address:Address){
         super()
         this.Binds = binds
         this.IndexBind = indexBind
@@ -104,10 +103,10 @@ class LetContinuation extends Instruction {
         let newEnvironment = { ...this.Environment };
         newEnvironment[(this.Binds as SymbolToken[])[2 * this.IndexBind].name] = machine.ValueStack.pop();
         if (2*(this.IndexBind +1) < (this.Binds as Array<SExpr>).length) {
-            machine.ControlStack.push(new LetContinuation(this.Binds, this.IndexBind + 1, this.Body, newEnvironment, []))
-            machine.ControlStack.push(new Evaluate((this.Binds as SExpr[])[2*(this.IndexBind+1)+1],newEnvironment,[]))
+            machine.ControlStack.push(new LetContinuation(this.Binds, this.IndexBind + 1, this.Body, newEnvironment, this.Address))
+            machine.ControlStack.push(new Evaluate((this.Binds as SExpr[])[2*(this.IndexBind+1)+1],newEnvironment,this.Address.append(2*(this.IndexBind+1))))
         } else {
-            machine.pushBody(this.Body as Array<SExpr>, newEnvironment, [])
+            machine.pushBody(this.Body as Array<SExpr>, newEnvironment, this.Address)
         }
     }
 }
@@ -129,7 +128,7 @@ class IfContinuation extends Instruction {
 
     Execute(machine: Machine): void {
         const [branch, tag ] =  machine.ValueStack.pop() ? [this.Then, 'then']: [this.Els, 'else']
-        machine.ControlStack.push(new Evaluate(branch, this.Environment, []))
+        machine.ControlStack.push(new Evaluate(branch, this.Environment, this.Address.append(tag)))
     }
 }
 
