@@ -528,4 +528,4 @@ function makeGuide(d: Distribution): Distribution {
   throw new Error(`no optimizable guide family for distribution ${d.name}`);
 }
 
-export {Distribution, Normal, LogNormal, Beta, Gamma, Exponential, Uniform, Poisson, Bernoulli, Discrete, UniformDiscrete, Dirichlet, DISTRIBUTIONS, makeGuide};
+export {softmax, Distribution, Normal, LogNormal, Beta, Gamma, Exponential, Uniform, Poisson, Bernoulli, Discrete, UniformDiscrete, Dirichlet, DISTRIBUTIONS, makeGuide};
