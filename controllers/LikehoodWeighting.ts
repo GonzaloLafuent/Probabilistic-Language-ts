@@ -6,7 +6,20 @@ import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/
 class LikehoodWeighting extends Controller {
     ControllerName = 'LikehoodWeighting'
 
-    run(program: string, rng: () => number): Array<PrimitiveValue> {
+    public run(program: string, rng: () => number, steps: number): Array<PrimitiveValue> {
+        const values = [] as Array<PrimitiveValue>
+        const log_Ws = [] as Array<PrimitiveValue>
+        
+        for (let i = 0; i<steps; i++ ){
+            const message = this.singleRun(program, rng)
+            values.push(message[0])
+            log_Ws.push(message[1])
+        }
+
+        return [values, log_Ws]
+    }
+
+    private singleRun(program:string, rng: () => number){
         const machine = new Machine([],[],{},rng,0)
         machine.initialMachine(program,rng)
 
@@ -15,14 +28,12 @@ class LikehoodWeighting extends Controller {
 
             const value = message.execute(this)
 
-            console.log("Value", value)
-
             if(value)
                 return value
         }
     }
 
-    sample(message:SampleMessage): void {
+    public sample(message:SampleMessage): void {
         const address = message.Address
         const distribution = message.Distribution
         const machine = message.Machine
@@ -30,7 +41,7 @@ class LikehoodWeighting extends Controller {
         machine.send(distribution.sample(machine.RNG) as PrimitiveValue)
     }
 
-    observe(message:ObserveMessage): void {
+    public observe(message:ObserveMessage): void {
         const distribution = message.Distribution
         const address = message.Address
         const observed = message.Observed
@@ -41,7 +52,7 @@ class LikehoodWeighting extends Controller {
         machine.send(observed)
     }
 
-    done(message:DoneMessage): Array<PrimitiveValue> {
+    public done(message:DoneMessage): Array<PrimitiveValue> {
         const logW = message.Machine.LogW
         const returnValue = message.ReturnValue
         return [returnValue, logW]
