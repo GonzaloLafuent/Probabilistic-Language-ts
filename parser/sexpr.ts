@@ -64,26 +64,17 @@ function tokenize(text: string) : Array<string | SymbolToken> {
 }
 
 function atom(token: string | SymbolToken): SExpr {
-  if (typeof token !== "string") {
-    return token;
+  if (typeof token !== "string") return token;
+  if (token === "true") return true;
+  if (token === "false") return false;
+  if (token === "nil") return null;
+
+  const numberRe = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
+  if (numberRe.test(token)) {
+    const n = Number(token);
+    if (!Number.isNaN(n)) return n;
   }
-  if (token === "true") {
-    return true;
-  }
-  if (token === "false") {
-    return false;
-  }
-  if (token === "nil") {
-    return null;
-  }
-  const intValue = Number.parseInt(token, 10);
-  if (!Number.isNaN(intValue) && intValue.toString() === token) {
-    return intValue;
-  }
-  const floatValue = Number.parseFloat(token);
-  if (!Number.isNaN(floatValue) && floatValue.toString() === token) {
-    return floatValue;
-  }
+
   return makeSymbol(token);
 }
 
