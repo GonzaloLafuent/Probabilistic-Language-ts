@@ -493,19 +493,19 @@ function dirichletCtor(...args: unknown[]): Dirichlet {
 }
 
 const DISTRIBUTIONS: Record<string, (...args: unknown[]) => Distribution> = {
-  normal: (sigma, mu) => new Normal(Number(mu), Number(sigma)),
-  "log-normal": (sigma, mu) => new LogNormal(Number(mu), Number(sigma)),
-  beta: (beta, alpha) => new Beta(Number(alpha), Number(beta)),
-  gamma: (rate, shape) => new Gamma(Number(shape), Number(rate)),
+  normal: (mu, sigma) => new Normal(Number(mu), Number(sigma)),
+  "log-normal": (mu, sigma) => new LogNormal(Number(mu), Number(sigma)),
+  beta: (alpha, beta) => new Beta(Number(alpha), Number(beta)),
+  gamma: (shape, rate) => new Gamma(Number(shape), Number(rate)),
   exponential: (rate) => new Exponential(Number(rate)),
   "uniform-continuous": (b, a) => new Uniform(Number(a), Number(b)),
-  uniform: (b, a) => new Uniform(Number(a), Number(b)),
+  uniform: (a, b) => new Uniform(Number(a), Number(b)),
   poisson: (lam) => new Poisson(Number(lam)),
   bernoulli: (p) => new Bernoulli(Number(p)),
   flip: (p) => new Bernoulli(Number(p)),
   discrete: (...args) => discreteCtor(...args),
   categorical: (...args) => discreteCtor(...args),
-  "uniform-discrete": (hi, lo) => new UniformDiscrete(Number(lo), Number(hi)),
+  "uniform-discrete": (lo, hi) => new UniformDiscrete(Number(lo), Number(hi)),
   dirichlet: (...args) => dirichletCtor(...args),
 };
 
