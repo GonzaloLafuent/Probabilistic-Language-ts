@@ -101,12 +101,12 @@ class LetContinuation extends Instruction {
     }
 
     Execute(machine: Machine): void {
-        let env = { ...this.Environment };
-        env[(this.Binds as SymbolToken[])[2 * this.IndexBind].name] = machine.ValueStack.pop();
+        let newEnvironment = { ...this.Environment };
+        newEnvironment[(this.Binds as SymbolToken[])[2 * this.IndexBind].name] = machine.ValueStack.pop();
         if (2*(this.IndexBind +1) < (this.Binds as Array<SExpr>).length) {
-            machine.ControlStack.push(new LetContinuation(this.Binds, this.IndexBind + 1, this.Body, this.Environment, []))
+            machine.ControlStack.push(new LetContinuation(this.Binds, this.IndexBind + 1, this.Body, newEnvironment, []))
         } else {
-            machine.pushBody(this.Body as Array<SExpr>, this.Environment, [])
+            machine.pushBody(this.Body as Array<SExpr>, newEnvironment, [])
         }
     }
 }
