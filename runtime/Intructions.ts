@@ -105,6 +105,7 @@ class LetContinuation extends Instruction {
         newEnvironment[(this.Binds as SymbolToken[])[2 * this.IndexBind].name] = machine.ValueStack.pop();
         if (2*(this.IndexBind +1) < (this.Binds as Array<SExpr>).length) {
             machine.ControlStack.push(new LetContinuation(this.Binds, this.IndexBind + 1, this.Body, newEnvironment, []))
+            machine.ControlStack.push(new Evaluate((this.Binds as SExpr[])[2*(this.IndexBind+1)+1],newEnvironment,[]))
         } else {
             machine.pushBody(this.Body as Array<SExpr>, newEnvironment, [])
         }
