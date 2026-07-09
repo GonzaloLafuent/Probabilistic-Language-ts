@@ -6,7 +6,7 @@ import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/
 class LikehoodWeighting extends Controller {
     ControllerName = 'LikehoodWeighting'
 
-    public run(program: string, rng: () => number, steps: number): Array<PrimitiveValue> {
+    public run(program: string, rng: () => number, rngs: Array<() => number>, steps: number): Array<PrimitiveValue> {
         const values = [] as Array<PrimitiveValue>
         const log_Ws = [] as Array<PrimitiveValue>
         

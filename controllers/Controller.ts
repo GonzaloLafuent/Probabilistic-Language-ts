@@ -4,7 +4,7 @@ import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/
 abstract class Controller {
     abstract ControllerName:string
 
-    public abstract run(program:string, rng: ()=> number, steps:number, warmup:number): Array<PrimitiveValue>
+    public abstract run(program:string, rng: ()=> number, rngs: Array<() => number>, steps:number, warmup:number): Array<PrimitiveValue>
 
     public abstract done(message:DoneMessage): Array<PrimitiveValue>
 
