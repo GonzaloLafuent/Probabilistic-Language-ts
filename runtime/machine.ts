@@ -5,7 +5,22 @@ import { DoneMessage, Message } from "./Messages.js";
 
 type Environment = Record<string, any>;
 
-type Address = Array<string> //This must change, take in count for MH
+class Address {
+    constructor(
+        readonly parts: readonly (string | number)[]
+    ) {}
+
+    append(...parts: (string | number)[]) {
+        return new Address([
+            ...this.parts,
+            ...parts
+        ]);
+    }
+
+    toString() {
+        return JSON.stringify(this.parts);
+    }
+}
 
 class Closure {
     Body: SExpr[];
@@ -59,7 +74,7 @@ class Machine {
         
         this.Environment = generatedEnvironment
         this.RNG = rng
-        this.ControlStack.push(new Evaluate(main, generatedEnvironment, []))
+        this.ControlStack.push(new Evaluate(main, generatedEnvironment, new Address([])))
 
         return this
     }
@@ -75,14 +90,14 @@ class Machine {
         return new DoneMessage(this.ValueStack.slice(-1)[0], this) 
     }
 
-    pushBody(body: SExpr[], environment: Environment, address: string[]) 
+    pushBody(body: SExpr[], environment: Environment, address: Address) 
     {   
         const sequence = new Array<Instruction>
         body.slice(0, -1).forEach((b, n) => {
-            sequence.push(new Evaluate(b,environment,address))
+            sequence.push(new Evaluate(b,environment, address.append('body',n)))
             sequence.push(new Discard())
         });
-        sequence.push(new Evaluate(body[body.length - 1],environment,address))
+        sequence.push(new Evaluate(body[body.length - 1], environment,address.append('body', body.length -1)))
         
         for(const instruction of sequence.reverse()) {
             this.ControlStack.push(instruction)
