@@ -4,13 +4,13 @@ import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/
 abstract class Controller {
     abstract ControllerName:string
 
-    abstract run(program:string,rng:() => number): Array<PrimitiveValue>
+    public abstract run(program:string, rng: ()=> number, steps:number, warmup:number): Array<PrimitiveValue>
 
-    abstract done(message:DoneMessage): Array<PrimitiveValue>
+    public abstract done(message:DoneMessage): Array<PrimitiveValue>
 
-    abstract sample(message:SampleMessage): void
+    public abstract sample(message:SampleMessage): void
 
-    abstract observe(message:ObserveMessage): void
+    public abstract observe(message:ObserveMessage): void
 }
 
 export {Controller}
