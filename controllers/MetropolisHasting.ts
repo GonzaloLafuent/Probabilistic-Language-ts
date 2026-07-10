@@ -37,7 +37,7 @@ class MetropolisHasting extends Controller {
             if (i >= warmup)
                 chain.push(value)
         }
-        return chain
+        return chain.flat()
     }
 
     private chooseResampleAddress(rng: () => number): string {
@@ -151,6 +151,10 @@ class MetropolisHasting extends Controller {
 
         this.new_observe_log_probs[address.toString()] = distribution.logProb(observed)
         machine.send(observed)
+    }
+
+    public mean(values: Array<number>): number {
+        return values.reduce((sum, x) => sum + x, 0) / values.length;
     }
     
 }

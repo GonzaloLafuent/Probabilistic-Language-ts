@@ -107,6 +107,10 @@ class SecuentialMonteCarlo extends Controller {
     private allMessageOnObserveState(){
         return !this.messages.some(message => !message.isObserveMessage())
     }
+
+    public mean(values: Array<number>): number {
+        return values.reduce((a, b) => a + b, 0) / values.length;
+    }
     
 }
 

@@ -58,6 +58,14 @@ class LikehoodWeighting extends Controller {
         const returnValue = message.ReturnValue
         return [returnValue, logW]
     }
+
+    public mean(values:Array<number>, weights:Array<number>) {
+        let mean = 0
+        for(let i = 0; i < values.length; i++){
+            mean = mean + values[i]*weights[i]
+        }
+        return mean
+    }
 }
 
 export {LikehoodWeighting}
