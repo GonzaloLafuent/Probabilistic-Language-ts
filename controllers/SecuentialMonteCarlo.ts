@@ -6,16 +6,12 @@ import { Controller } from "./Controller.js";
 
 class SecuentialMonteCarlo extends Controller {
     ControllerName = 'Secuential Monte Carlo'
-    particles = [] as Array<Machine>
-    messages = [] as Array<Message>
-    paused: Machine[] = [];
-    logInc: number[] = [];
-    particleCount = 0
-    
+    private particles = [] as Array<Machine>
+    private messages = [] as Array<Message>
+    private paused: Machine[] = [];
+    private logInc: number[] = [];
 
     public run(program: string, rng: () => number, rngs: Array<() => number>, particleCount:number): Array<PrimitiveValue> {
-        this.particleCount = particleCount
-
         this.particles = Array.from({ length: particleCount }, (_, i) => new Machine([],[],{},rng,0)
                                                                     .initialMachine(program, rngs[i])); 
 
@@ -78,10 +74,7 @@ class SecuentialMonteCarlo extends Controller {
     }
 
     public done(message: DoneMessage): Array<PrimitiveValue> {
-        if(this.allMessagesOnDoneState()){
-            return [message.ReturnValue]
-        }
-        return []
+        return [message.ReturnValue]
     }
 
     public sample(message: SampleMessage): void {
@@ -93,19 +86,18 @@ class SecuentialMonteCarlo extends Controller {
     }
 
     public observe(message: ObserveMessage): void {
-        if(this.allMessageOnObserveState()){
-            const distribution = message.Distribution
-            const observed = message.Observed
-            const machine = message.Machine
-            const address = message.Address
+      
+        const distribution = message.Distribution
+        const observed = message.Observed
+        const machine = message.Machine
+        const address = message.Address
 
-            const log_w = distribution.logProb(observed)
-            machine.setLogW(machine.LogW + log_w)
-            
-            this.logInc.push(log_w)
-            machine.send(observed)
-            this.paused.push(machine)
-        }
+        const log_w = distribution.logProb(observed)
+        machine.setLogW(machine.LogW + log_w)
+        
+        this.logInc.push(log_w)
+        machine.send(observed)
+        this.paused.push(machine)
     }
 
     private allMessagesOnDoneState() {
@@ -117,3 +109,5 @@ class SecuentialMonteCarlo extends Controller {
     }
     
 }
+
+export {SecuentialMonteCarlo}
