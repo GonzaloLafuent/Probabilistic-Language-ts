@@ -19,6 +19,8 @@ export const sample_expresion_2 = '(let [x (sample (normal 0 1)) y (sample (norm
 export const observe_expression_1 = '(observe (normal 0 1) 2)'
 
 export const sample_observe_expression_1 = '(let [m (sample (normal 0 1))] (observe (normal m 1) 2.0) m)'
+export const sample_observe_expresion_2 = '(let [m (sample (normal 0 1))] (observe (normal m 1) 2) (observe (normal m 1) 3) m)' // Mean  1.6667
+export const sample_obnserve_expresion_3 = '(let [x (sample (normal 0 1)) y (sample (normal x 1))] (observe (normal y 1) 2) x)' // Mean 0.667
 
 export const fn_expression_1 = '(defn inc [x] (+ x 1)) (inc 5)'
 export const fn_expression_2 = '(let [x 5] (let [f (fn [y] (+ x y))] (f 3)))'
