@@ -78,6 +78,7 @@ class Execution {
             sequence.push(new Evaluate(b,environment, address.append('body',n)))
             sequence.push(new Discard())
         });
+        
         sequence.push(new Evaluate(body[body.length - 1], environment,address.append('body', body.length -1)))
         
         for(const instruction of sequence.reverse()) {
