@@ -1,4 +1,4 @@
-import { SExpr } from "../parser/sexpr.js";
+import { SExpr, SymbolToken } from "../parser/sexpr.js";
 import { Environment } from "../runtime/machine.js";
 import { DISTRIBUTIONS, Distribution } from "./distributions.js";
 
@@ -13,7 +13,7 @@ export class Closure {
     Parameters: SExpr
     Environment: Environment  
 
-    constructor( body: SExpr,parameters: SExpr, environment: Environment) {
+    constructor( body: Array<SExpr>,parameters: Array<SymbolToken>, environment: Environment) {
         this.Body = body
         this.Parameters = parameters
         this.Environment = environment

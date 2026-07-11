@@ -41,10 +41,13 @@ class Fn extends PrimitiveExpression {
     name = 'fn'
 
     execute(expression: SExpr, machine: Machine, environment: Environment, address: Address): void {
-        let params: SExpr
-        let body: SExpr 
-        [, params, body] = expression as Array<SExpr>
-        machine.ValueStack.push(new Closure(params, body, environment))
+        let rawParams: SExpr
+        let body: SExpr
+        [, rawParams, ...body] = expression as Array<SExpr>
+
+        const params = rawParams as SymbolToken[];
+
+        machine.ValueStack.push(new Closure(body as Array<SExpr>, params, environment))
     }
 }
 

@@ -1,6 +1,6 @@
 import { Address, Machine } from "./machine.js"
 import type { Environment } from "./machine.js"
-import { isSymbol, SExpr, isSExprArray, SymbolToken, isPrimitiveExpression,  } from "../parser/sexpr.js"
+import { isSymbol, SExpr, isSExprArray, SymbolToken, isPrimitiveExpression, PrimitiveExpression,  } from "../parser/sexpr.js"
 import { Closure, isPrimitive, PRIMITIVES, PrimitiveValue } from "../language/primitives.js"
 import { Message, ObserveMessage, SampleMessage } from "./Messages.js"
 import { Distribution } from "../language/distributions.js"
@@ -36,7 +36,7 @@ class Evaluate extends Instruction {
         } else if (!isSExprArray(this.Expression) && !isPrimitiveExpression(this.Expression)) {
             machine.ValueStack.push(this.Expression)
         } else {
-            const head = (this.Expression as Array<SExpr>)[0]
+            const head = (this.Expression instanceof PrimitiveExpression)? this.Expression: (this.Expression as Array<SExpr>)[0]
             
             if (isPrimitiveExpression(head)) {
                 head.execute(this.Expression, machine, this.Environment, this.Address) 
@@ -163,8 +163,8 @@ class CallContinuation extends Instruction {
         
         if (func  instanceof Closure) { 
             const newEnvironment = { ...func.Environment };
-            const parameters = func.Parameters as Array<SExpr>
-            
+            const parameters = func.Parameters as Array<SymbolToken>
+        
             for (let i = 0; i < parameters.length; i++) { 
                 newEnvironment[(parameters[i] as SymbolToken).name] = args[i]; 
             }
