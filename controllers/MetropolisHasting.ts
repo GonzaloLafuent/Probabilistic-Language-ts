@@ -30,9 +30,7 @@ class MetropolisHasting extends Controller {
             if(Math.log(rng()) < log_alpha){
                 value = newValue
                 this.setInitialTraces()
-            } else {
-                //this.rollbackTraces()
-            }
+            } 
 
             if (i >= warmup)
                 chain.push(value)
@@ -46,12 +44,6 @@ class MetropolisHasting extends Controller {
         const index = Math.floor(rng() * addresses.length);
 
         return addresses[index];
-    }
-
-    private rollbackTraces(){
-        this.new_trace_values = { ...this.trace_values };
-        this.new_sample_log_probs = { ...this.sample_log_probs };
-        this.new_observe_log_probs = { ...this.observe_log_probs };
     }
 
     private setInitialTraces(){
@@ -127,7 +119,7 @@ class MetropolisHasting extends Controller {
     }
 
     public sample(message: SampleMessage): void {
-        const key = message.Address.toString();
+        const key = message.Address.hash();
 
         let x : PrimitiveValue;
 
@@ -149,7 +141,7 @@ class MetropolisHasting extends Controller {
         const observed = message.Observed
         const machine = message.Machine
 
-        this.new_observe_log_probs[address.toString()] = distribution.logProb(observed)
+        this.new_observe_log_probs[address.hash()] = distribution.logProb(observed)
         machine.send(observed)
     }
 
