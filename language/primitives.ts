@@ -1,3 +1,5 @@
+import { SExpr } from "../parser/sexpr.js";
+import { Environment } from "../runtime/machine.js";
 import { DISTRIBUTIONS, Distribution } from "./distributions.js";
 
 export interface PrimitiveArray extends Array<PrimitiveValue> {}
@@ -5,6 +7,22 @@ export interface PrimitiveArray extends Array<PrimitiveValue> {}
 export interface PrimitiveMap {
   [key: string]: PrimitiveValue;
 }
+
+export class Closure {
+    Body: SExpr
+    Parameters: SExpr
+    Environment: Environment  
+
+    constructor( body: SExpr,parameters: SExpr, environment: Environment) {
+        this.Body = body
+        this.Parameters = parameters
+        this.Environment = environment
+    }
+}
+
+export type PrimitiveFunction = 
+  | ((...args: PrimitiveValue[]) => Number)
+  | ((...args: PrimitiveValue[]) => PrimitiveValue);
 
 export type PrimitiveValue =
   | number
@@ -14,8 +32,8 @@ export type PrimitiveValue =
   | PrimitiveArray
   | PrimitiveMap
   | Distribution
-  | ((...args: PrimitiveValue[]) => Number)
-  | ((...args: PrimitiveValue[]) => PrimitiveValue);
+  | PrimitiveFunction
+  | Closure
 
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && !Number.isNaN(value);
