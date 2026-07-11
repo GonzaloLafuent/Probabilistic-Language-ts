@@ -1,14 +1,14 @@
 import { Address, Machine } from "./machine.js"
 import type { Environment } from "./machine.js"
-import { isSymbol, SExpr, isSExprArray, SymbolToken } from "../parser/sexpr.js"
-import { isPrimitive, PRIMITIVES, PrimitiveValue } from "../language/primitives.js"
+import { isSymbol, SExpr, isSExprArray, SymbolToken, isPrimitiveExpression,  } from "../parser/sexpr.js"
+import { Closure, isPrimitive, PRIMITIVES, PrimitiveValue } from "../language/primitives.js"
 import { Message, ObserveMessage, SampleMessage } from "./Messages.js"
 import { Distribution } from "../language/distributions.js"
 
 abstract class Instruction {
-    abstract instructionName: string
+    public abstract instructionName: string
 
-    abstract Execute(machine: Machine): void | Message
+    public abstract Execute(machine: Machine): void | Message
 }
 
 class Evaluate extends Instruction {
@@ -24,7 +24,7 @@ class Evaluate extends Instruction {
         this.Address = address
     }
     
-    Execute(machine: Machine): void  {
+    public Execute(machine: Machine): void  {
         if(isSymbol(this.Expression)) {
             if (this.Expression.name in this.Environment) {
                 machine.ValueStack.push(this.Environment[this.Expression.name])
@@ -33,40 +33,22 @@ class Evaluate extends Instruction {
             }else{
                 throw Error("Incorrect Name")
             }
-        } else if (!isSExprArray(this.Expression) ) {
+        } else if (!isSExprArray(this.Expression) && !isPrimitiveExpression(this.Expression)) {
             machine.ValueStack.push(this.Expression)
         } else {
-            const head = this.Expression[0] as SymbolToken
-            const name = head.name
-            if (name === 'let') {
-                const [, binds, ...body] = this.Expression;
-                if (binds){
-                    machine.ControlStack.push(new LetContinuation(binds, 0, body, this.Environment, this.Address))  
-                    machine.ControlStack.push(new Evaluate((binds as Array<SExpr>)[1], this.Environment, this.Address.append('let',0)))                                      
-                } else 
-                {
-                    machine.pushBody(body,this.Environment,this.Address)
-                }
-            } else if (name === 'if'){
-                const [, test, then, els] = this.Expression
-                machine.ControlStack.push(new IfContinuation(then,els, this.Environment, this.Address))
-                machine.ControlStack.push(new Evaluate(test, this.Environment, this.Address.append('test')))
-            } else if (name === 'fn'){
-                //To Do
-            } else if (name === 'sample'){
-                machine.ControlStack.push(new SampleContinuation(this.Address));
-                machine.ControlStack.push(new Evaluate(this.Expression[1], this.Environment, this.Address.append('d')))
-            } else if (name === 'observe') {
-                machine.ControlStack.push(new ObserveContinuation(this.Address))
-                machine.ControlStack.push(new Evaluate(this.Expression[2], this.Environment, this.Address.append('v')))
-                machine.ControlStack.push(new Evaluate(this.Expression[1], this.Environment, this.Address.append('d')))
+            const head = (this.Expression as Array<SExpr>)[0]
+            
+            if (isPrimitiveExpression(head)) {
+                head.execute(this.Expression, machine, this.Environment, this.Address) 
             } else {
-                machine.ControlStack.push(new CallContinuation(this.Expression.length - 1, this.Address))
+                const expression = this.Expression as Array<SExpr>
 
-                for (let i = this.Expression.length - 1; i > 0; i--) {
-                    machine.ControlStack.push(new Evaluate(this.Expression[i], this.Environment, this.Address.append(i-1)))
+                machine.ControlStack.push(new CallContinuation(expression.length - 1, this.Address))
+
+                for (let i = expression.length - 1; i > 0; i--) {
+                    machine.ControlStack.push(new Evaluate(expression[i], this.Environment, this.Address.append(i-1)))
                 }
-                machine.ControlStack.push(new Evaluate(this.Expression[0], this.Environment, this.Address.append('fn')))
+                machine.ControlStack.push(new Evaluate(expression[0], this.Environment, this.Address.append('fn')))
             }
         }
 
@@ -77,7 +59,7 @@ class Evaluate extends Instruction {
 class Discard extends Instruction {
     instructionName = 'Discard'
 
-    Execute(machine: Machine): void {
+    public Execute(machine: Machine): void {
         machine.ValueStack.pop()
     }
 }
@@ -99,7 +81,7 @@ class LetContinuation extends Instruction {
         this.Address = address
     }
 
-    Execute(machine: Machine): void {
+    public Execute(machine: Machine): void {
         let newEnvironment = { ...this.Environment };
         newEnvironment[(this.Binds as SymbolToken[])[2 * this.IndexBind].name] = machine.ValueStack.pop();
         if (2*(this.IndexBind +1) < (this.Binds as Array<SExpr>).length) {
@@ -126,7 +108,7 @@ class IfContinuation extends Instruction {
         this.Address = address
     }
 
-    Execute(machine: Machine): void {
+    public Execute(machine: Machine): void {
         const [branch, tag ] =  machine.ValueStack.pop() ? [this.Then, 'then']: [this.Els, 'else']
         machine.ControlStack.push(new Evaluate(branch, this.Environment, this.Address.append(tag)))
     }
@@ -141,7 +123,7 @@ class SampleContinuation extends Instruction {
         this.Address = address
     }
 
-    Execute(machine: Machine): Message {
+    public Execute(machine: Machine): Message {
         const distribution = machine.ValueStack.pop()
         return new SampleMessage(this.Address, distribution as Distribution, machine)
     }
@@ -156,9 +138,10 @@ class ObserveContinuation extends Instruction {
         this.Address = address
     }
 
-    Execute(machine: Machine): Message {
+    public Execute(machine: Machine): Message {
         const observed = machine.ValueStack.pop()
         const distribution = machine.ValueStack.pop()
+        
         return new ObserveMessage(this.Address, distribution as Distribution, observed as PrimitiveValue, machine)
     }
 }
@@ -174,11 +157,19 @@ class CallContinuation extends Instruction {
         this.Address = addres
     }
 
-    Execute(machine: Machine): void {
+    public Execute(machine: Machine): void {
         const args = machine.ValueStack.splice(-this.NumberOfParameters);
         const func = machine.ValueStack.pop() as ((...args: PrimitiveValue[]) => PrimitiveValue)
-        if (false) {
-            //Implement logic for closure
+        
+        if (func  instanceof Closure) { 
+            const newEnvironment = { ...func.Environment };
+            const parameters = func.Parameters as Array<SExpr>
+            
+            for (let i = 0; i < parameters.length; i++) { 
+                newEnvironment[(parameters[i] as SymbolToken).name] = args[i]; 
+            }
+
+            machine.pushBody(func.Body as Array<SExpr>, newEnvironment, this.Address); 
         } else {
             const value = func(...args) as PrimitiveValue
             machine.ValueStack.push(value)
@@ -187,4 +178,5 @@ class CallContinuation extends Instruction {
 }
 
 
-export { Instruction, Evaluate, Discard}
+export { Instruction, Evaluate, Discard, LetContinuation, IfContinuation, SampleContinuation, ObserveContinuation, CallContinuation}
+
