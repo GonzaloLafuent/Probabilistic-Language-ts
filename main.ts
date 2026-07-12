@@ -1,15 +1,10 @@
 import { LikehoodWeighting } from "./controllers/LikehoodWeighting.js";
 import { MetropolisHasting } from "./controllers/MetropolisHasting.js";
 import { SecuentialMonteCarlo } from "./controllers/SecuentialMonteCarlo.js";
-import { Normal } from "./language/Distributions.js";
-import { PrimitiveValue } from "./language/Primitives.js";
-import { parseOne } from "./parser/sexpr.js";
 
 let program = '(let [mu (sample (normal 0 1))] (observe (normal mu 1) 2.3) mu)' // Define your program
 
 console.log("Program: ",program)
-
-let ats = parseOne(program)
 
 const controller_lw = new LikehoodWeighting()
 
