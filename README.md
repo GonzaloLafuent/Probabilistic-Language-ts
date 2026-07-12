@@ -1,7 +1,6 @@
 # Probabilistic Language in TypeScript
 
-A probabilistic programming language implementation written in TypeScript that enables users to write and execute probabilistic programs with support for sampling, observing, and various inference algorithms. This implementation is base on the ideas of the book 'An Introduction to Probabilistic
-Programming' by Jan-Willem van de Meent. The following implemenation not only allow you to explore already define inference algorithm, but also alows us to define your own inferece algforithm. Using a strgon typed leguange like tysciprt make it easri to observe th parse expression created but the suer, in order to make it easier to debug user errors and extend the sintaxis of the lengafugae. 
+This project features a Probabilistic Programming Language (PPL) implementation written in TypeScript, designed to let users author and execute probabilistic programs utilizing primitives like sample and observe across a variety of inference algorithms. The implementation is base on the concepts of the book "An Introduction to Probabilistic Programming" by Jan-Willem van de Meent, this architecture is built for both exploration and extensibility; it allows you to explore pre-defined inference engines or easily implement your own custom inference algorithms. Leveraging TypeScript’s strong type system ensures complete transparency when interacting with the parsed expression, simplifying  debugging while making the  syntax of the language extensible.
 
 ## Table of Contents
 
@@ -29,15 +28,15 @@ This project implements a probabilistic programming language that allows you to:
 
 The language runtime uses a stack-based virtual machine with continuation-passing style for efficient program execution.
 
-Based on the concepts of the book (Cover over chapter 6), the inference engine is completely decoupled from the standard execution of program expressions. The syntax of a HOPL (Higher-Order Probabilistic Language) expression allows us to define an inference controller, which acts as the object responsible for executing the chosen inference algorithm.
+Based on the concepts of the book (Cover over chapter 6), the inference engine is decoupled from the standard execution of program expressions. The syntax of a HOPL expression allows us to define an inference controller, which acts as the object responsible for executing the chosen inference algorithm.
 
 When the program encounters an observe or sample expression, the execution flow is handed over to this controller. Within the controller, the specific behavior for these probabilistic expressions is defined based on the active inference algorithm. To support this architecture, we implement an abstract controller that provides standard interfaces for handling sample, observe, or done expressions. Depending on the specific inference method you wish to deploy, you can simply extend this abstract controller and override these specific methods. Crucially, the execution logic for non-probabilistic expressions remains identical across all inference controllers you define.
 
-To successfully implement this architectural decoupling, a double dispatch scheme is used. When a probabilistic expression is encountered, it accepts the controller as an argument and dispatches back to it, dynamically determining exactly which method (sample, observe, or done) the controller needs to execute based on both the controller's type and the expression's type.
+To successfully implement this architectural decoupling, a double dispatch pattern is used. When a probabilistic expression continuation is encountered, a message its sent to the inference controllet. This message accepts the controller as an argument and dispatches back to it, dynamically determining exactly which method (sample, observe, or done) the controller needs to execute based on both the controller's type and the expression's type.
 
-This approach naturally aligns with a distributed client/server architecture. This not only separates the core probabilistic logic from standard execution but also provides the flexibility to run both components on entirely different machines.
+This approach naturally aligns with a client/server architecture. This not only separates the probabilistic logic from standard execution but also provides the flexibility to run both components on entirely different machines.
 
-Finally, to improve readability, maintainability, and future expansion of the language, we define a clear class hierarchy for instructions and primitive expressions. This structural design simplifies debugging and tracing the execution flow, while simultaneously allowing us to easily extend the language with new primitive instructions without altering the core runtime engine.
+Finally, to improve readability, maintainability, and future expansion of the language, we define a clear class hierarchy for instructions and primitive expressions. This structural design simplifies debugging and tracing the execution flow, while simultaneously allowing us to easily extend the language with new primitive instructions without altering the runtime engine.
 
 ## Features
 
@@ -46,7 +45,7 @@ Finally, to improve readability, maintainability, and future expansion of the la
   - Symbols and keywords
   - Lists and vectors
   - Hash maps
-  - One of the greatest advantages of this architecture is that the parser codifies each primitive instruction (such as let, observe, and sample) as a unique object, with each one implementing its own evaluate method. By establishing this class hierarchy, when the runtime encounters an instruction, it simply needs to invoke that specific method, completely abstracting the evaluation logic from the execution runtime itself. This highly decoupled design allows you to introduce new primitive instructions seamlessly without needing to modify the core runtime engine.
+  - One of the greatest advantages of this architecture is that the parser codifies each primitive instruction (such as let, observe, and sample) as a unique object, with each one implementing its own evaluate method. By establishing this class hierarchy, when the runtime encounters an instruction, it simply needs to invoke that specific method, completely abstracting the evaluation logic from the execution runtime itself. This decoupled design allows you to introduce new primitive instructions without needing to modify the runtime engine.
   
 - **Probability Distributions**:
   - Normal distribution
@@ -64,11 +63,13 @@ Finally, to improve readability, maintainability, and future expansion of the la
   - Function calls and primitive operations
 
 - **Inference Algorithms**:
-  - **Likelihood Weighting**: takes three parameters: the program expression to evaluate, a random number generator (RNG) function, and a sample size ($steps$) representing the number of independent program execution traces to generate. As the virtual machine executes each trace, the algorithm dynamically tracks and updates an importance weight based on the evidence encountered at each observe expression. The algorithm returns a pair consisting of the sampled execution values and their corresponding normalized importance weights. Because weights are accumulated in log-space to prevent numerical underflow, the final probability distribution is obtained by applying the Softmax function to the vector of accumulated log-weights
-  - **Metropolis-Hastings**: this approach maintains a single, continuous execution trace, updating its state based on an acceptance probability, $\alpha$. This parameter determines whether the runtime transitions to a newly proposed execution state or retains the current one. However, tracking these execution traces requires address codification.
-  - **Sequential Monte Carlo**: A particle filtering inference technique. The algorithm executes multiple instances of the same program simultaneously, tracking them as a population of particles. When the execution encounters an observe expression, a resampling step is triggered to dynamically replicate particles with higher importance weights and eliminate those with lower weights. The final output is an array containing the values obtained from each surviving particle trace at the end of the execution.
+  - **Likelihood Weighting**: takes three parameters: the program expression to evaluate, a random number generator (RNG) function, and a sample size ($steps$) representing the number of independent program execution traces to generate. As the virtual machine executes each trace, the algorithm tracks and updates an importance weight based on the evidence encountered at each observe expression. The algorithm returns a pair consisting of the sampled execution values and their corresponding normalized importance weights. Because weights are accumulated in log-space to prevent numerical underflow, the final probability distribution is obtained by applying the Softmax function.
+  - **Metropolis-Hastings**: this approach maintains a single, continuous execution trace, updating its state based on an acceptance probability, $\alpha$. This parameter determines whether the runtime transitions to a newly execution state or retains the current one. However, tracking these execution traces requires address codification.
+  - **Sequential Monte Carlo**: The algorithm executes multiple instances of the same program simultaneously, tracking them as a population of particles. When the execution encounters an observe expression, a resampling step is triggered to dynamically replicate particles with higher importance weights and eliminate those with lower weights. The final output is an array containing the values obtained from each surviving particle trace at the end of the execution.
 
-  - Every inference algorithm implements its own statistical mean. This allows us to compare the performance and execution results of completely different inference algorithms while running them against the exact program. 
+  - Every inference algorithm implements its own statistical mean. This allows us to compare the performance and execution results of completely different inference algorithms while running them against the exact program. Main.ts possess some examples on how to invoke the mean method for every controller.
+
+  - For nos probabilistic expression the parameters and mean methods are useless. It will evealute the expression whituot reaching the controllers
 
 - **Debugging Support**: VS Code integration with launch configurations for debugging TypeScript and compiled JavaScript
 
@@ -87,13 +88,13 @@ Finally, to improve readability, maintainability, and future expansion of the la
 │   ├── distributions.ts             # Probability distribution implementations
 │   └── primitives.ts                # Primitive operations and functions
 ├── runtime/
-│   ├── Execution.ts                   # Stack-based virtual machine
+│   ├── Execution.ts                 # Stack-based virtual machine
 │   ├── Intructions.ts               # VM instruction definitions
 │   └── Messages.ts                  # Message passing between VM and controllers
 └── controllers/
     ├── Controller.ts                # Abstract controller base class
     ├── LikehoodWeighting.ts          # Likelihood Weighting inference
-    ├── MetropolisHasting.ts                         # Metropolis-Hastings inference
+    ├── MetropolisHasting.ts          # Metropolis-Hastings inference
     └── SecuentialMonteCarlo.ts       # Sequential Monte Carlo inference
 ```
 
@@ -255,7 +256,7 @@ Tokenizes and parses S-expressions into an abstract syntax tree. Handles:
   - Contains useful instruccions to modify the value and control stack
   
 - **Instructions**: Continuation-based execution:
-  - `Evaluate`: Evaluate an expression
+  - `Evaluate`: Evaluate an expression. The way every primitive expression its evaluated can be found on the sexpr.ts file.
   - `LetContinuation`: Handle let bindings
   - `IfContinuation`: Handle conditionals
   - `CallContinuation`: Handle function calls
@@ -266,8 +267,9 @@ Tokenizes and parses S-expressions into an abstract syntax tree. Handles:
 
 Each inference algorithm extends `Controller`:
 - Implements the `run()` method for inference
-- Handles `sample()` and `observe()` messages from the VM
-- Manages particle weights and convergence
+- Handles `sample()` and `observe()` messages from the Runtime. A `done()` method its also provided, which determiantes when inference finish
+- Manages particle weights
+- Inside many private methods can be implemented to improve the logic of your own controller
 
 ### Language (`language/`)
 
@@ -283,7 +285,7 @@ Each inference algorithm extends `Controller`:
 let program = "(sample (normal 0 1))"
 
 const controller = new LikehoodWeighting()
-const result = controller.run(program, Math.random, [], 3)
+const result = controller.run(program, {rng:Math.random, steps: 3})
 console.log(result)
 ```
 
@@ -328,5 +330,8 @@ const smcResult = smcController.run(program, {rng:Math.random, rngs: new Array(2
 4. Use meaningful commit messages
 
 ## Future Improvements
-- The lenguage does not accept named functions
-- Improve the way address are coded. Right now thy are display as a secuencia of string. A GUID will be better
+- Incorporate named function to the sintaxis of the lengauge
+- Improve address codification for Metropolis Hasting
+- Incorporate automatic testing
+- Incorporate visualizers for the inference controllers
+- Improve error handling
