@@ -1,6 +1,7 @@
 # Probabilistic Language in TypeScript
 
-A probabilistic programming language implementation written in TypeScript that enables users to write and execute probabilistic programs with support for sampling, observing, and various inference algorithms.
+A probabilistic programming language implementation written in TypeScript that enables users to write and execute probabilistic programs with support for sampling, observing, and various inference algorithms. This implementation is base on the ideas of the book 'An Introduction to Probabilistic
+Programming' by Jan-Willem van de Meent. The following implemenation not only allow you to explore already define inference algorithm, but also alows us to define your own inferece algforithm. Using a strgon typed leguange like tysciprt make it easri to observe th parse expression created but the suer, in order to make it easier to debug user errors and extend the sintaxis of the lengafugae. 
 
 ## Table of Contents
 
@@ -28,6 +29,14 @@ This project implements a probabilistic programming language that allows you to:
 
 The language runtime uses a stack-based virtual machine with continuation-passing style for efficient program execution.
 
+Based on the book's core concepts, the inference engine is decoupled from the standard execution of program expressions. The syntax of a HOPL (Higher-Order Probabilistic Language) expression allows us to define an inference controller, which acts as the object responsible for executing the inference algorithm.
+
+When the program encounters an observe or sample expression, execution flow is handed over to this controller. Within the controller, the specific behavior for these probabilistic expressions is defined based on the chosen inference algorithm.
+
+To support this architecture, we implement an abstract controller that defines standard interfaces for handling sample, observe, or done expressions. Depending on the specific inference method you want to implement, you can simply extend this abstract controller and override these specific methods. Crucially, the execution logic for non-probabilistic expressions remains identical across all inference controllers you define.
+
+This approach follows a **client/server architecture**, which allows you not only to separate the probabilistic logic from the non-probabilistic execution, but also to execute both components on entirely different machines.
+
 ## Features
 
 - **S-Expression Parser**: Parses Lisp-like syntax with support for:
@@ -35,6 +44,7 @@ The language runtime uses a stack-based virtual machine with continuation-passin
   - Symbols and keywords
   - Lists and vectors
   - Hash maps
+  - One of the greatest advantages of this architecture is that the parser codifies each primitive instruction (such as let, observe, and sample) as a unique object, with each one implementing its own evaluate method. By establishing this class hierarchy, when the runtime encounters an instruction, it simply needs to invoke that specific method, completely abstracting the evaluation logic from the execution runtime itself. This highly decoupled design allows you to introduce new primitive instructions seamlessly without needing to modify the core runtime engine.
   
 - **Probability Distributions**:
   - Normal distribution
@@ -73,13 +83,13 @@ The language runtime uses a stack-based virtual machine with continuation-passin
 │   ├── distributions.ts             # Probability distribution implementations
 │   └── primitives.ts                # Primitive operations and functions
 ├── runtime/
-│   ├── machine.ts                   # Stack-based virtual machine
+│   ├── Execution.ts                   # Stack-based virtual machine
 │   ├── Intructions.ts               # VM instruction definitions
 │   └── Messages.ts                  # Message passing between VM and controllers
 └── controllers/
     ├── Controller.ts                # Abstract controller base class
     ├── LikehoodWeighting.ts          # Likelihood Weighting inference
-    ├── MH.ts                         # Metropolis-Hastings inference
+    ├── MetropolisHasting.ts                         # Metropolis-Hastings inference
     └── SecuentialMonteCarlo.ts       # Sequential Monte Carlo inference
 ```
 
@@ -230,13 +240,15 @@ Tokenizes and parses S-expressions into an abstract syntax tree. Handles:
 - String literals with escape sequences
 - Symbols and keywords
 - Nested lists
+- Primitive expressions
 
 ### Runtime (`runtime/`)
 
-- **Machine**: Stack-based virtual machine with:
+- **Execution**: Stack-based virtual machine with:
   - Control stack for instructions
   - Value stack for operands
   - Environment for variable bindings
+  - Contains useful instruccions to modify the value and control stack
   
 - **Instructions**: Continuation-based execution:
   - `Evaluate`: Evaluate an expression
@@ -281,19 +293,19 @@ let program = `
 `
 
 const controller = new LikehoodWeighting()
-const result = controller.run(program, Math.random, [], 100)
+const result = controller.run(program, {rng: Math.random, steps: 100000})
 ```
 
 ### Example 3: Using Different Inference Algorithms
 
 ```typescript
 // Metropolis-Hastings
-const mhController = new MH()
-const mhResult = mhController.run(program, Math.random, [Math.random], 1000, 100)
+const mhController = new MetropolisHasting()
+const mhResult = mhController.run(program, {rng: Math.random, steps: 60000, warmup: 3000})
 
 // Sequential Monte Carlo
-const smcController = new SMC()
-const smcResult = smcController.run(program, Math.random, [], 500)
+const smcController = new SecuentialMonteCarlo()
+const smcResult = smcController.run(program, {rng:Math.random, rngs: new Array(20000).fill(Math.random), steps: 20000})
 ```
 
 ## Development Workflow
@@ -311,6 +323,6 @@ const smcResult = smcController.run(program, Math.random, [], 500)
 3. Update this README if adding new features
 4. Use meaningful commit messages
 
-## License
-
-ISC
+## Future Improvements
+- The lenguage does not accept named functions
+- Improve the way address are coded. Right now thy are display as a secuencia of string. A GUID will be better
