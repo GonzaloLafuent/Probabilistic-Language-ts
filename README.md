@@ -29,13 +29,15 @@ This project implements a probabilistic programming language that allows you to:
 
 The language runtime uses a stack-based virtual machine with continuation-passing style for efficient program execution.
 
-Based on the book's core concepts, the inference engine is decoupled from the standard execution of program expressions. The syntax of a HOPL (Higher-Order Probabilistic Language) expression allows us to define an inference controller, which acts as the object responsible for executing the inference algorithm.
+Based on the concepts of the book (Cover over chapter 6), the inference engine is completely decoupled from the standard execution of program expressions. The syntax of a HOPL (Higher-Order Probabilistic Language) expression allows us to define an inference controller, which acts as the object responsible for executing the chosen inference algorithm.
 
-When the program encounters an observe or sample expression, execution flow is handed over to this controller. Within the controller, the specific behavior for these probabilistic expressions is defined based on the chosen inference algorithm.
+When the program encounters an observe or sample expression, the execution flow is handed over to this controller. Within the controller, the specific behavior for these probabilistic expressions is defined based on the active inference algorithm. To support this architecture, we implement an abstract controller that provides standard interfaces for handling sample, observe, or done expressions. Depending on the specific inference method you wish to deploy, you can simply extend this abstract controller and override these specific methods. Crucially, the execution logic for non-probabilistic expressions remains identical across all inference controllers you define.
 
-To support this architecture, we implement an abstract controller that defines standard interfaces for handling sample, observe, or done expressions. Depending on the specific inference method you want to implement, you can simply extend this abstract controller and override these specific methods. Crucially, the execution logic for non-probabilistic expressions remains identical across all inference controllers you define.
+To successfully implement this architectural decoupling, a double dispatch scheme is used. When a probabilistic expression is encountered, it accepts the controller as an argument and dispatches back to it, dynamically determining exactly which method (sample, observe, or done) the controller needs to execute based on both the controller's type and the expression's type.
 
-This approach follows a **client/server architecture**, which allows you not only to separate the probabilistic logic from the non-probabilistic execution, but also to execute both components on entirely different machines.
+This approach naturally aligns with a distributed client/server architecture. This not only separates the core probabilistic logic from standard execution but also provides the flexibility to run both components on entirely different machines.
+
+Finally, to improve readability, maintainability, and future expansion of the language, we define a clear class hierarchy for instructions and primitive expressions. This structural design simplifies debugging and tracing the execution flow, while simultaneously allowing us to easily extend the language with new primitive instructions without altering the core runtime engine.
 
 ## Features
 
@@ -62,9 +64,11 @@ This approach follows a **client/server architecture**, which allows you not onl
   - Function calls and primitive operations
 
 - **Inference Algorithms**:
-  - **Likelihood Weighting**: Fast approximate inference
-  - **Metropolis-Hastings**: MCMC sampling
-  - **Sequential Monte Carlo**: Particle filtering
+  - **Likelihood Weighting**: takes three parameters: the program expression to evaluate, a random number generator (RNG) function, and a sample size ($steps$) representing the number of independent program execution traces to generate. As the virtual machine executes each trace, the algorithm dynamically tracks and updates an importance weight based on the evidence encountered at each observe expression. The algorithm returns a pair consisting of the sampled execution values and their corresponding normalized importance weights. Because weights are accumulated in log-space to prevent numerical underflow, the final probability distribution is obtained by applying the Softmax function to the vector of accumulated log-weights
+  - **Metropolis-Hastings**: this approach maintains a single, continuous execution trace, updating its state based on an acceptance probability, $\alpha$. This parameter determines whether the runtime transitions to a newly proposed execution state or retains the current one. However, tracking these execution traces requires address codification.
+  - **Sequential Monte Carlo**: A particle filtering inference technique. The algorithm executes multiple instances of the same program simultaneously, tracking them as a population of particles. When the execution encounters an observe expression, a resampling step is triggered to dynamically replicate particles with higher importance weights and eliminate those with lower weights. The final output is an array containing the values obtained from each surviving particle trace at the end of the execution.
+
+  - Every inference algorithm implements its own statistical mean. This allows us to compare the performance and execution results of completely different inference algorithms while running them against the exact program. 
 
 - **Debugging Support**: VS Code integration with launch configurations for debugging TypeScript and compiled JavaScript
 
