@@ -24,3 +24,4 @@ export const sample_obnserve_expresion_3 = '(let [x (sample (normal 0 1)) y (sam
 
 export const fn_expression_1 = '(defn inc [x] (+ x 1)) (inc 5)'
 export const fn_expression_2 = '(let [x 5] (let [f (fn [y] (+ x y))] (f 3)))'
+export const fn_expresssion_3 = '(let [make-shift (fn [mu] (fn [x] (+ x mu)))  f (make-shift 10)] (f 3))'
