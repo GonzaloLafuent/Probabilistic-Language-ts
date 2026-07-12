@@ -1,14 +1,3 @@
-/*
-interface RNG {
-  random(): number;
-}
-
-class DefaultRNG implements RNG {
-  random(): number {
-    return Math.random();
-  }
-}*/
-
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }

@@ -1,6 +1,6 @@
 import { isPrimitiveExpression, isSExprArray, parse, PrimitiveExpression, SExpr, SymbolToken } from "../parser/sexpr.js";
 import { Discard, Evaluate, Instruction } from "./Intructions.js";
-import type { PrimitiveValue } from "../language/primitives.js";
+import type { PrimitiveValue } from "../language/Primitives.js";
 import { DoneMessage, Message } from "./Messages.js";
 
 type Environment = Record<string, any>;
@@ -11,10 +11,7 @@ class Address {
     ) {}
 
     public append(...parts: (string | number)[]) {
-        return new Address([
-            ...this.parts,
-            ...parts
-        ]);
+        return new Address([...this.parts,...parts]);
     }
 
     public hash() {
@@ -23,11 +20,11 @@ class Address {
 }
 
 class Execution {
-    ControlStack: Instruction[];
-    ValueStack: PrimitiveValue[];
-    Environment: Environment;
-    RNG: () => number;
-    LogW: number;
+    private ControlStack: Instruction[];
+    private ValueStack: PrimitiveValue[];
+    private Environment: Environment;
+    public RNG: () => number;
+    public LogW: number;
 
     constructor(
         C: Instruction[],
@@ -86,13 +83,33 @@ class Execution {
         }
     }
 
-    public send(value:PrimitiveValue) {
+    public pushToControlStack(instruction: Instruction) : void{
+        this.ControlStack.push(instruction)
+    }
+
+    public popControlStack(): Instruction{
+        return this.ControlStack.pop() as Instruction
+    }
+
+    public pushToValueStack(value: PrimitiveValue) : void{
+        this.ValueStack.push(value)
+    }
+
+    public popValueStack(): PrimitiveValue {
+        return this.ValueStack.pop() as PrimitiveValue
+    }
+
+    public getArguments(numberOfArguments: number) : Array<PrimitiveValue> {
+        return this.ValueStack.splice(-numberOfArguments)
+    }
+
+    public send(value:PrimitiveValue) : void{
         this.ValueStack.push(value);
     }
 
-    public setLogW(newLogW:number){
-        this.LogW = newLogW
+    public updateLogW(newLogW:number): void {
+        this.LogW = this.LogW + newLogW
     }
 }
 
-export {Execution as Machine, Environment, Address}
+export {Execution, Environment, Address}

@@ -1,7 +1,7 @@
-import { PrimitiveValue } from "../language/primitives.js";
-import { Machine } from "../runtime/machine.js";
+import { PrimitiveValue } from "../language/Primitives.js";
+import { Execution } from "../runtime/Execution.js";
 import { DoneMessage, SampleMessage, ObserveMessage } from "../runtime/Messages.js";
-import { Controller } from "./Controller.js";
+import { Controller, RunOptions } from "./Controller.js";
 
 class MetropolisHasting extends Controller {
     ControllerName = 'Single Site - Metropolis Hasting'
@@ -13,9 +13,14 @@ class MetropolisHasting extends Controller {
     private new_observe_log_probs: Record<string, PrimitiveValue> = {}
     private resampleAddress = ''
 
-    public run(program:string, rng: ()=> number, rngs: Array<() => number>, steps:number, warmup:number): Array<PrimitiveValue> {
-        let value, newValue
+    public run(program:string, runOptions: RunOptions): Array<PrimitiveValue> {
+        const rng = runOptions.rng as (() => number)
+        const warmup = runOptions.warmup as number
+        const steps = runOptions.steps as number 
         
+        this.checkAllParametersNeedes(program, runOptions)
+
+        let value, newValue
         value = this.singleRun(program, rng)
 
         this.setInitialTraces()
@@ -36,6 +41,17 @@ class MetropolisHasting extends Controller {
                 chain.push(value)
         }
         return chain.flat()
+    }
+
+    private checkAllParametersNeedes(program: string, runOptions: RunOptions){
+        if(program.length == 0)
+            throw Error('Missing program')
+        else if(runOptions.rng == undefined)
+            throw Error('Missing RNG')
+        else if (runOptions.steps == undefined)
+            throw Error('Missing steps')
+        else if(runOptions.warmup == undefined)
+            throw Error('Missing rngs')
     }
 
     private chooseResampleAddress(rng: () => number): string {
@@ -100,12 +116,12 @@ class MetropolisHasting extends Controller {
     }
 
     private singleRun(program:string, rng: () => number): PrimitiveValue{
-        const machine = new Machine([],[],{},rng,0).initialMachine(program)
+        const execution = new Execution([],[],{},rng,0).initialMachine(program)
 
         this.initializeNewTraces()
 
         while(true){
-            const message = machine.resume()
+            const message = execution.resume()
             const value = message.execute(this)
 
             if(value)
@@ -127,22 +143,22 @@ class MetropolisHasting extends Controller {
             x = this.trace_values[key];
         }
         else {
-            x = message.Distribution.sample(message.Machine.RNG) as number;
+            x = message.Distribution.sample(message.Execution.RNG) as number;
         }
 
         this.new_trace_values[key] = x;
         this.new_sample_log_probs[key] = message.Distribution.logProb(x);
-        message.Machine.send(x);
+        message.Execution.send(x);
     }
 
     public observe(message: ObserveMessage): void {
         const address = message.Address
         const distribution = message.Distribution
         const observed = message.Observed
-        const machine = message.Machine
+        const execution = message.Execution
 
         this.new_observe_log_probs[address.hash()] = distribution.logProb(observed)
-        machine.send(observed)
+        execution.send(observed)
     }
 
     public mean(values: Array<number>): number {

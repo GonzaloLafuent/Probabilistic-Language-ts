@@ -1,6 +1,6 @@
-import { Closure } from "../language/primitives.js";
+import { Closure } from "../language/Primitives.js";
 import { Evaluate, IfContinuation, Instruction, LetContinuation, ObserveContinuation, SampleContinuation } from "../runtime/Intructions.js";
-import { Address, Environment, Machine } from "../runtime/machine.js";
+import { Address, Environment, Execution } from "../runtime/Execution.js";
 
 export type SymbolToken = { kind: "Symbol"; name: string };
 
@@ -9,20 +9,20 @@ export type SExpr = SymbolToken | number | boolean | string | SExpr[] | null | P
 abstract class PrimitiveExpression {
     public abstract name: string
 
-    abstract execute(expression: SExpr, machine: Machine, Environment: Environment, Address: Address) : void
+    abstract evaluate(expression: SExpr, execution: Execution, Environment: Environment, Address: Address) : void
 }
 
 class Let extends PrimitiveExpression {
     name = 'let'
 
-    execute(expression: SExpr, machine: Machine, environment: Environment, address: Address): void {
+    public evaluate(expression: SExpr, execution: Execution, environment: Environment, address: Address): void {
       const [, binds, ...body] = expression as Array<SExpr>;
       if (binds){
-          machine.ControlStack.push(new LetContinuation(binds, 0, body, environment, address))  
-          machine.ControlStack.push(new Evaluate((binds as Array<SExpr>)[1], environment, address.append('let',0)))                                      
+          execution.pushToControlStack(new LetContinuation(binds, 0, body, environment, address))  
+          execution.pushToControlStack(new Evaluate((binds as Array<SExpr>)[1], environment, address.append('let',0)))                                      
       } else 
       {
-          machine.pushBody(body,environment,address)
+          execution.pushBody(body,environment,address)
       }
     }
 }
@@ -30,43 +30,43 @@ class Let extends PrimitiveExpression {
 class If extends PrimitiveExpression {
     name = 'if'
 
-    execute(expression: SExpr, machine: Machine, environment: Environment, address: Address): void {
+    public evaluate(expression: SExpr, execution: Execution, environment: Environment, address: Address): void {
       const [, test, then, els] = expression as Array<SExpr>
-      machine.ControlStack.push(new IfContinuation(then,els, environment, address))
-      machine.ControlStack.push(new Evaluate(test, environment, address.append('test')))
+      execution.pushToControlStack(new IfContinuation(then,els, environment, address))
+      execution.pushToControlStack(new Evaluate(test, environment, address.append('test')))
     }
 }
 
 class Fn extends PrimitiveExpression {
     name = 'fn'
 
-    execute(expression: SExpr, machine: Machine, environment: Environment, address: Address): void {
+    public evaluate(expression: SExpr, execution: Execution, environment: Environment, address: Address): void {
         let rawParams: SExpr
         let body: SExpr
         [, rawParams, ...body] = expression as Array<SExpr>
 
         const params = rawParams as SymbolToken[];
 
-        machine.ValueStack.push(new Closure(body as Array<SExpr>, params, environment))
+        execution.pushToValueStack(new Closure(body as Array<SExpr>, params, environment))
     }
 }
 
 class Sample extends PrimitiveExpression {
     name = 'sample'
 
-    execute(expression: SExpr, machine: Machine, environment: Environment, address: Address): void {
-        machine.ControlStack.push(new SampleContinuation(address));
-        machine.ControlStack.push(new Evaluate((expression as Array<SExpr>)[1], environment, address.append('d')))
+    public evaluate(expression: SExpr, execution: Execution, environment: Environment, address: Address): void {
+        execution.pushToControlStack(new SampleContinuation(address));
+        execution.pushToControlStack(new Evaluate((expression as Array<SExpr>)[1], environment, address.append('d')))
     }
 }
 
 class Observe extends PrimitiveExpression {
     name = 'observe'
 
-    execute(expression: SExpr, machine: Machine, environment: Environment, address: Address): void {
-        machine.ControlStack.push(new ObserveContinuation(address))
-        machine.ControlStack.push(new Evaluate((expression as Array<SExpr>)[2], environment, address.append('v')))
-        machine.ControlStack.push(new Evaluate((expression as Array<SExpr>)[1], environment, address.append('d')))
+    public evaluate(expression: SExpr, execution: Execution, environment: Environment, address: Address): void {
+        execution.pushToControlStack(new ObserveContinuation(address))
+        execution.pushToControlStack(new Evaluate((expression as Array<SExpr>)[2], environment, address.append('v')))
+        execution.pushToControlStack(new Evaluate((expression as Array<SExpr>)[1], environment, address.append('d')))
     }
 }
 

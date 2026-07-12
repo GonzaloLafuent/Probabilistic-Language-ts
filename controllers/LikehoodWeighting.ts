@@ -1,15 +1,20 @@
-import type { PrimitiveValue } from "../language/primitives.js";
-import { Machine } from "../runtime/machine.js";
-import { Controller } from "./Controller.js";
+import type { PrimitiveValue } from "../language/Primitives.js";
+import { Execution } from "../runtime/Execution.js";
+import { Controller, RunOptions } from "./Controller.js";
 import { DoneMessage, Message, ObserveMessage, SampleMessage } from "../runtime/Messages.js";
-import { softmax } from "../language/distributions.js";
+import { softmax } from "../language/Distributions.js";
 
 class LikehoodWeighting extends Controller {
     ControllerName = 'LikehoodWeighting'
 
-    public run(program: string, rng: () => number, rngs: Array<() => number>, steps: number): Array<PrimitiveValue> {
+    public run(program: string,runOptions: RunOptions): Array<PrimitiveValue> {
         const values = [] as Array<PrimitiveValue>
         const log_Ws = [] as Array<number>
+
+        const rng = runOptions.rng as () => number
+        const steps = runOptions.steps as number
+
+        this.checkAllParametersNeedes(program,runOptions)
         
         for (let i = 0; i<steps; i++ ){
             const message = this.singleRun(program, rng)
@@ -20,12 +25,21 @@ class LikehoodWeighting extends Controller {
         return [values, softmax(log_Ws)]
     }
 
+    private checkAllParametersNeedes(program: string, runOptions: RunOptions){
+        if(program.length == 0)
+            throw Error('Missing program')
+        else if(runOptions.rng == undefined)
+            throw Error('Missing RNG')
+        else if (runOptions.steps == undefined)
+            throw Error('Missing steps')
+    }
+
     private singleRun(program:string, rng: () => number){
-        const machine = new Machine([],[],{},rng,0)
-        machine.initialMachine(program,rng)
+        const execution = new Execution([],[],{},rng,0)
+        execution.initialMachine(program,rng)
 
         while(true){
-            const message = machine.resume()
+            const message = execution.resume()
 
             const value = message.execute(this)
 
@@ -37,24 +51,24 @@ class LikehoodWeighting extends Controller {
     public sample(message:SampleMessage): void {
         const address = message.Address
         const distribution = message.Distribution
-        const machine = message.Machine
+        const execution = message.Execution
         
-        machine.send(distribution.sample(machine.RNG) as PrimitiveValue)
+        execution.send(distribution.sample(execution.RNG) as PrimitiveValue)
     }
 
     public observe(message:ObserveMessage): void {
         const distribution = message.Distribution
         const address = message.Address
         const observed = message.Observed
-        const machine = message.Machine
+        const execution = message.Execution
 
-        machine.setLogW(machine.LogW + distribution.logProb(observed))
+        execution.updateLogW(distribution.logProb(observed))
 
-        machine.send(observed)
+        execution.send(observed)
     }
 
     public done(message:DoneMessage): Array<PrimitiveValue> {
-        const logW = message.Machine.LogW
+        const logW = message.Execution.LogW
         const returnValue = message.ReturnValue
         return [returnValue, logW]
     }

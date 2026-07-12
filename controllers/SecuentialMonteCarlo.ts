@@ -1,18 +1,24 @@
-import { softmax } from "../language/distributions.js";
-import { PrimitiveValue } from "../language/primitives.js";
-import { Machine } from "../runtime/machine.js";
+import { softmax } from "../language/Distributions.js";
+import { PrimitiveValue } from "../language/Primitives.js";
+import { Execution } from "../runtime/Execution.js";
 import { DoneMessage, SampleMessage, ObserveMessage, Message } from "../runtime/Messages.js";
-import { Controller } from "./Controller.js";
+import { Controller, RunOptions } from "./Controller.js";
 
 class SecuentialMonteCarlo extends Controller {
     ControllerName = 'Secuential Monte Carlo'
-    private particles = [] as Array<Machine>
+    private particles = [] as Array<Execution>
     private messages = [] as Array<Message>
-    private paused: Machine[] = [];
+    private paused: Execution[] = [];
     private logInc: number[] = [];
 
-    public run(program: string, rng: () => number, rngs: Array<() => number>, particleCount:number): Array<PrimitiveValue> {
-        this.particles = Array.from({ length: particleCount }, (_, i) => new Machine([],[],{},rng,0)
+    public run(program: string, runOptions: RunOptions): Array<PrimitiveValue> {
+        const particleCount = runOptions.steps as number
+        const rng = runOptions.rng as ()=> number
+        const rngs = runOptions.rngs as Array<() => number>
+
+        this.checkAllParametersNeedes(program, runOptions)
+        
+        this.particles = Array.from({ length: particleCount }, (_, i) => new Execution([],[],{},rng,0)
                                                                     .initialMachine(program, rngs[i])); 
 
         while(true){
@@ -24,7 +30,6 @@ class SecuentialMonteCarlo extends Controller {
 
             const value = this.messages.map(message  => message.execute(this)).flat()
 
-
             if(!value.every(val => val == undefined))
                 return value as PrimitiveValue[]
 
@@ -32,12 +37,23 @@ class SecuentialMonteCarlo extends Controller {
         } 
     }
 
-    private advance(machine:Machine): Message {
-        let message = machine.resume()
+    private checkAllParametersNeedes(program: string, runOptions: RunOptions){
+        if(program.length == 0)
+            throw Error('Missing program')
+        else if(runOptions.rng == undefined)
+            throw Error('Missing RNG')
+        else if (runOptions.steps == undefined)
+            throw Error('Missing steps')
+        else if(runOptions.rngs == undefined || runOptions.rngs.length < runOptions.steps)
+            throw Error('Missing rngs')
+    }
+
+    private advance(execution:Execution): Message {
+        let message = execution.resume()
 
         while(message.isSampleMessage()){
             message.execute(this)
-            message = machine.resume()
+            message = execution.resume()
         }
 
         return message
@@ -46,7 +62,7 @@ class SecuentialMonteCarlo extends Controller {
     private resample(rngs: Array<() => number>){
         const probabilities = softmax(this.logInc)
 
-        this.particles = [] as Machine[];
+        this.particles = [] as Execution[];
 
         for (let j = 0; j < this.paused.length; j++) {
 
@@ -80,24 +96,24 @@ class SecuentialMonteCarlo extends Controller {
     public sample(message: SampleMessage): void {
         const addres = message.Address
         const distribution = message.Distribution
-        const machine = message.Machine
+        const execution = message.Execution
 
-        machine.send(distribution.sample(machine.RNG) as PrimitiveValue)
+        execution.send(distribution.sample(execution.RNG) as PrimitiveValue)
     }
 
     public observe(message: ObserveMessage): void {
       
         const distribution = message.Distribution
         const observed = message.Observed
-        const machine = message.Machine
+        const execution = message.Execution
         const address = message.Address
 
         const log_w = distribution.logProb(observed)
-        machine.setLogW(machine.LogW + log_w)
+        execution.updateLogW(log_w)
         
         this.logInc.push(log_w)
-        machine.send(observed)
-        this.paused.push(machine)
+        execution.send(observed)
+        this.paused.push(execution)
     }
 
     private allMessagesOnDoneState() {

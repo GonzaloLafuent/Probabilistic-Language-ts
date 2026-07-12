@@ -1,6 +1,6 @@
 import { SExpr, SymbolToken } from "../parser/sexpr.js";
-import { Environment } from "../runtime/machine.js";
-import { DISTRIBUTIONS, Distribution } from "./distributions.js";
+import { Environment } from "../runtime/Execution.js";
+import { DISTRIBUTIONS, Distribution } from "./Distributions.js";
 
 export interface PrimitiveArray extends Array<PrimitiveValue> {}
 
@@ -22,7 +22,8 @@ export class Closure {
 
 export type PrimitiveFunction = 
   | ((...args: PrimitiveValue[]) => Number)
-  | ((...args: PrimitiveValue[]) => PrimitiveValue);
+  | ((...args: PrimitiveValue[]) => PrimitiveValue)
+  | Closure
 
 export type PrimitiveValue =
   | number
@@ -33,7 +34,6 @@ export type PrimitiveValue =
   | PrimitiveMap
   | Distribution
   | PrimitiveFunction
-  | Closure
 
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && !Number.isNaN(value);

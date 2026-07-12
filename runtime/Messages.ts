@@ -1,7 +1,7 @@
 import { Controller } from "../controllers/Controller.js"
-import { Distribution } from "../language/distributions.js"
-import type { PrimitiveValue } from "../language/primitives.js"
-import type { Address, Machine } from "./machine.js"
+import { Distribution } from "../language/Distributions.js"
+import type { PrimitiveValue } from "../language/Primitives.js"
+import type { Address, Execution } from "./Execution.js"
 
 abstract class Message {
    abstract messageName: string 
@@ -19,13 +19,13 @@ class SampleMessage extends Message {
     messageName = 'sample'
     Address: Address
     Distribution: Distribution
-    Machine: Machine
+    Execution: Execution
     
-    constructor(address: Address, distribution: Distribution, machine: Machine) {
+    constructor(address: Address, distribution: Distribution, execution: Execution) {
         super()
         this.Address = address
         this.Distribution = distribution
-        this.Machine = machine
+        this.Execution = execution
     }
     
     execute(controller: Controller): void | Array<PrimitiveValue> {
@@ -48,14 +48,14 @@ class ObserveMessage extends Message {
     Address: Address
     Distribution: Distribution
     Observed: PrimitiveValue
-    Machine: Machine
+    Execution: Execution
     
-    constructor(address:Address, distribution:Distribution, observed:PrimitiveValue, machine:Machine){
+    constructor(address:Address, distribution:Distribution, observed:PrimitiveValue, execution:Execution){
         super()
         this.Address = address
         this.Distribution = distribution
         this.Observed = observed
-        this.Machine = machine
+        this.Execution = execution
     }
     
     execute(controller: Controller): void | Array<PrimitiveValue> {
@@ -75,12 +75,12 @@ class ObserveMessage extends Message {
 
 class DoneMessage extends Message {
     messageName = 'Done'
-    Machine: Machine
+    Execution: Execution
     ReturnValue: PrimitiveValue
     
-    constructor(returnValue:PrimitiveValue, machine: Machine){
+    constructor(returnValue:PrimitiveValue, execution: Execution){
         super()
-        this.Machine = machine
+        this.Execution = execution
         this.ReturnValue = returnValue
     }
     
